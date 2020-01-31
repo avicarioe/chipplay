@@ -1,0 +1,29 @@
+#ifndef VERSION_H__
+#define VERSION_H__
+
+#define STRINGIZE2(s) #s
+#define STRINGIZE(s) STRINGIZE2(s)
+
+#define PRJ_NAME STRINGIZE(__PRJ_NAME__)
+
+#define VERSION_MAJOR               @VMAJOR@
+#define VERSION_MINOR               @VMINOR@
+#define VERSION_FIX                 @VFIX@
+
+#define VERSION_PRODUCT_ID          @PID@
+#define VERSION_COMPANY_ID          @CID@
+
+#define VERSION_STR                 \
+	STRINGIZE(VERSION_MAJOR) "."    \
+	STRINGIZE(VERSION_MINOR) "."    \
+	STRINGIZE(VERSION_FIX)
+
+#define VERSION_INFO                \
+	PRJ_NAME " v"                   \
+	VERSION_STR " "                 \
+	STRINGIZE(__DEVICE__)           \
+	" (Compiled "                   \
+	__DATE__ " "                    \
+	__TIME__ ")"
+
+#endif // VERSION_H__

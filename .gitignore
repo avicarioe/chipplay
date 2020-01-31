@@ -1,0 +1,10 @@
+build/*
+.clang_complete
+include/version.h
+.vimlocal
+tags
+*.gch
+Makefile.paths
+lib/*.a
+*~
+*.orig
