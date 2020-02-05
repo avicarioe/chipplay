@@ -168,7 +168,7 @@ tags: Makefile \
 	Makefile.inc \
 	$(MAKEFILE_PATHS)
 	$(info Generating: $@)
-	$(CTAGS) -R $(INC_FOLDERS) $(SRC_FILES)
+	$(CTAGS) -R --exclude=proc $(INC_FOLDERS) $(SRC_FILES)
 
 indent:
 	$(NO_ECHO)astyle --project=.astylerc -v $(PROJ_SRC) $(INC_DIR)/*.h

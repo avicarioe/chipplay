@@ -6,6 +6,9 @@
 #include "uart.h"
 #include "log.h"
 #include "version.h"
+#include "timer16.h"
+#include "util.h"
+#include "interrupts.h"
 
 /** Global variables **********************************************************/
 
@@ -40,8 +43,30 @@ int main(void)
 	LOG_WARN("Warning %s:%d", __FILE__, __LINE__);
 	LOG_ERROR("Error %s:%d", __FILE__, __LINE__);
 
+	timer16_init(TIMER2_R, PIC32_TPSB_256, 0x0000FFFFU);
+	timer16_start(TIMER2_R);
+
+	DISABLE_IRQ();
+
+	INTCONSET = PIC32_INTCON_MVEC;
+
+	IPCCLR(2) = PIC32_IPC_TxIP_MASK | PIC32_IPC_TxIS_MASK;
+	IPCSET(2) = IRQ_PRIORITY_LOW << PIC32_IPC_TxIP_POS;
+	IECSET(0) = PIC32_IEC_T2IE;
+
+	ENABLE_IRQ();
+
 	for(;;) {
+		//LOG_INFO("Timer %u", (unsigned int)TIMER2_R->TMR);
 	}
 
 	return 0;
 }
+
+__ISR(TIMER2)
+{
+	IFSCLR(0) = PIC32_IFS_T2IF;
+	LOG_INFO("IRQ");
+	return;
+}
+

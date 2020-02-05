@@ -17,7 +17,3 @@ void _on_bootstrap()
 
 }
 
-void user_isr(void)
-{
-	return;
-}
