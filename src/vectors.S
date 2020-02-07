@@ -7,10 +7,8 @@
 .global __vector_\num
 __vector_\num:
 j \name\()_IRQHandler
-.text
 .weak \name\()_IRQHandler
-eret
-nop
+.set \name\()_IRQHandler, DefaultHandler
 .endm
 
 .align 4
@@ -34,6 +32,47 @@ HANDLER 13 CAPTURE3
 HANDLER 14 COMPARE3
 HANDLER 15 EXT3
 
+HANDLER 16 TIMER4
+HANDLER 17 CAPTURE4
+HANDLER 18 COMPARE4
+HANDLER 19 EXT4
+HANDLER 20 TIMER5
+HANDLER 21 CAPTURE5
+HANDLER 22 COMPARE5
+HANDLER 23 SPI1
+
+HANDLER 24 MULTI1
+HANDLER 25 I2C1
+HANDLER 26 INPUTCHANGE
+HANDLER 27 ADC1
+HANDLER 28 PARALLEL
+HANDLER 29 COMPARATOR1
+HANDLER 30 COMPARATOR2
+HANDLER 31 MULTI2
+
+HANDLER 32 MULTI13
+HANDLER 33 I2C2
+HANDLER 34 FAILSAFE
+HANDLER 35 RTCC
+HANDLER 36 DMA0
+HANDLER 37 DMA1
+HANDLER 38 DMA2
+HANDLER 39 DMA3
+
+HANDLER 40 DMA4
+HANDLER 41 DMA5
+HANDLER 42 DMA6
+HANDLER 43 DMA7
+HANDLER 44 FLASH
+HANDLER 45 USB
+HANDLER 46 CAN1
+HANDLER 47 CAN2
+
+HANDLER 48 ETHERNET
+HANDLER 49 UART4
+HANDLER 50 UART6
+HANDLER 51 UART7
+
 .text
 .align 4
 # Exceptions are handled here (trap, syscall, etc)
@@ -41,10 +80,15 @@ HANDLER 15 EXT3
 .set noreorder
 .ent _gen_exception
 _gen_exception:
-mfc0 $k0, $14, 0
-addi $k0, $k0, 4
-mtc0 $k0, $14, 0
-eret
-nop
+	mfc0 $k0, $14, 0
+	addi $k0, $k0, 4
+	mtc0 $k0, $14, 0
+	eret
+	nop
 
 .end _gen_exception
+
+.section _def_handler, "ax", @progbits
+DefaultHandler:
+	j DefaultHandler
+	nop
