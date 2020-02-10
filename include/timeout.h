@@ -5,7 +5,8 @@
 #include <stdint.h>
 
 typedef struct timeout_t {
-	uint32_t time;
+	uint32_t start;
+	uint32_t ms;
 } timeout_t;
 
 void timeout_init();

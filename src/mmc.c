@@ -5,14 +5,14 @@
 #include "string.h"
 #include "mmc.h"
 
-#define PIN_CS_N     (3)
-#define PIN_CS_REG   (GPIOA_R)
+#define PIN_CS_N     (2)
+#define PIN_CS_REG   (GPIOE_R)
 
-#define SPI_REG      SPI1_R
+#define SPI_REG      SPI2_R
 
 /* Socket controls  (Platform dependent) */
-#define CS_LOW()   PIN_CS_REG->PORTSET = (1 << PIN_CS_N)
-#define CS_HIGH()  PIN_CS_REG->PORTCLR = (1 << PIN_CS_N)
+#define CS_LOW()   PIN_CS_REG->PORTCLR = (1 << PIN_CS_N)
+#define CS_HIGH()  PIN_CS_REG->PORTSET = (1 << PIN_CS_N)
 #define MMC_CD     (true)
 #define MMC_WP     (true)
 
@@ -83,6 +83,7 @@ static BYTE xchg_spi (BYTE dat)
 	xfer.tx_buff = &dat;
 	xfer.rx_len = 1;
 	xfer.tx_len = 1;
+
 	spi_xfer(SPI_REG, &xfer);
 
 	return rx_buf;

@@ -7,6 +7,11 @@
 #define DISABLE_IRQ()    asm volatile("di")
 #define ENABLE_IRQ()     asm volatile("ei")
 
+#define INTERRUPTS_SET_MVEC()      \
+	DISABLE_IRQ();                 \
+	INTCONSET = PIC32_INTCON_MVEC; \
+	ENABLE_IRQ();
+
 #define IRQ_PRIORITY_CRITICAL      (7)
 #define IRQ_PRIORITY_VERY_HIGH     (6)
 #define IRQ_PRIORITY_HIGH          (5)

@@ -1,23 +1,25 @@
 #include "spi.h"
 
+#define SPI_BRG_FS(fr, fs) ((fr)/2/(fs) + 1)
+
 void spi_init(SPI_reg_t* reg)
 {
-	reg->CONCLR = 0xFFFFFFFF;
+	reg->CON = 0;
 	reg->BUF = 0;
 
-	reg->BRG = PIC32_BRG_BAUD(FREQ_BUS, SPI_DEFAULT_FREQ);
-
+	reg->BRG = SPI_BRG_FS(FREQ_BUS, SPI_DEFAULT_FREQ);
+	
 	reg->STATCLR = PIC32_SPISTAT_SPIROV;
 	reg->CONSET = PIC32_SPICON_MSTEN;
+	reg->CONSET = PIC32_SPICON_CKP;
 	reg->CONSET = PIC32_SPICON_ON;
-
 }
 
 void spi_set_freq(SPI_reg_t* reg, uint32_t freq)
 {
 	while(reg->STAT & PIC32_SPISTAT_SPIBUSY);
 
-	reg->BRG = PIC32_BRG_BAUD(FREQ_BUS, freq);
+	reg->BRG = SPI_BRG_FS(FREQ_BUS, freq);
 }
 
 void spi_xfer(SPI_reg_t* reg, spi_xfer_t* xfer)
@@ -46,10 +48,10 @@ void spi_xfer(SPI_reg_t* reg, spi_xfer_t* xfer)
 void spi_single(SPI_reg_t* reg, uint8_t tx, uint8_t* rx)
 {
 	while(!(reg->STAT & PIC32_SPISTAT_SPITBE));
-
+	
 	reg->BUF = tx;
 	
-	while(!(reg->STAT & PIC32_SPISTAT_SPITBF));
+	while(!(reg->STAT & PIC32_SPISTAT_SPIRBF));
 
 	*rx = reg->BUF;
 }
