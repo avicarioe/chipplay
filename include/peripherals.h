@@ -25,6 +25,13 @@
 #define TIMER5_BASE       (PERIPHERALS_BASE + 0x0e00)
 #define SPI1_BASE         (PERIPHERALS_BASE + 0x5800)
 #define SPI2_BASE         (PERIPHERALS_BASE + 0x5A00)
+#define GPIOA_BASE        (PERIPHERALS_BASE + 0x86000)
+#define GPIOB_BASE        (PERIPHERALS_BASE + 0x86040)
+#define GPIOC_BASE        (PERIPHERALS_BASE + 0x86080)
+#define GPIOD_BASE        (PERIPHERALS_BASE + 0x860C0)
+#define GPIOE_BASE        (PERIPHERALS_BASE + 0x86100)
+#define GPIOF_BASE        (PERIPHERALS_BASE + 0x86140)
+#define GPIOG_BASE        (PERIPHERALS_BASE + 0x86180)
 
 /** Register structures *******************************************************/
 typedef struct {
@@ -78,6 +85,25 @@ typedef struct {
 	__O  uint32_t BRGINV;
 } SPI_reg_t;
 
+typedef struct {
+	__IO uint32_t TRIS;
+	__O  uint32_t TRISCLR;
+	__O  uint32_t TRISSET;
+	__O  uint32_t TRISINV;
+	__IO uint32_t PORT;
+	__O  uint32_t PORTCLR;
+	__O  uint32_t PORTSET;
+	__O  uint32_t PORTINV;
+	__IO uint32_t LAT;
+	__O  uint32_t LATCLR;
+	__O  uint32_t LATSET;
+	__O  uint32_t LATINV;
+	__IO uint32_t OCD;
+	__O  uint32_t OCDCLR;
+	__O  uint32_t OCDSET;
+	__O  uint32_t OCDINV;
+} GPIO_reg_t;
+
 
 /** Declaration ***************************************************************/
 #define UART1_R                       ((UART_reg_t*) UART1_BASE)
@@ -89,6 +115,13 @@ typedef struct {
 #define TIMER5_R                      ((TIMER_reg_t*) TIMER5_BASE)
 #define SPI1_R                        ((SPI_reg_t*) SPI1_BASE)
 #define SPI2_R                        ((SPI_reg_t*) SPI2_BASE)
+#define GPIOA_R                       ((GPIO_reg_t*) GPIOA_BASE)
+#define GPIOB_R                       ((GPIO_reg_t*) GPIOB_BASE)
+#define GPIOC_R                       ((GPIO_reg_t*) GPIOC_BASE)
+#define GPIOD_R                       ((GPIO_reg_t*) GPIOD_BASE)
+#define GPIOE_R                       ((GPIO_reg_t*) GPIOE_BASE)
+#define GPIOF_R                       ((GPIO_reg_t*) GPIOF_BASE)
+#define GPIOG_R                       ((GPIO_reg_t*) GPIOG_BASE)
 
 /** Registers *****************************************************************/
 #define PIC32_TCON_ON                  (1 << 15)

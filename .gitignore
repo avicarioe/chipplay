@@ -8,3 +8,4 @@ Makefile.paths
 lib/*.a
 *~
 *.orig
+ff14/*

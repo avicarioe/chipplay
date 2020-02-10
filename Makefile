@@ -52,9 +52,12 @@ LDFLAGS += $(OPT)
 
 #External src files
 SRC_FILES += \
+	./ff14/source/ff.c \
+	./ff14/source/ffunicode.c \
 
 INC_FOLDERS += \
-	${TOOLCHAIN_INSTALL_DIR}/include
+	${TOOLCHAIN_INSTALL_DIR}/include \
+	./ff14/source/ \
 
 # Libraries
 LIB_FILES += \
