@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <pic32mx.h>
 
+#define FREQ_BUS 80000000UL
+
 #ifdef __cplusplus
 #define __I     volatile
 #else
@@ -21,6 +23,8 @@
 #define TIMER3_BASE       (PERIPHERALS_BASE + 0x0a00)
 #define TIMER4_BASE       (PERIPHERALS_BASE + 0x0c00)
 #define TIMER5_BASE       (PERIPHERALS_BASE + 0x0e00)
+#define SPI1_BASE         (PERIPHERALS_BASE + 0x5800)
+#define SPI2_BASE         (PERIPHERALS_BASE + 0x5A00)
 
 /** Register structures *******************************************************/
 typedef struct {
@@ -57,6 +61,23 @@ typedef struct {
 	__O  uint32_t PRINV;
 } TIMER_reg_t;
 
+typedef struct {
+	__IO uint32_t CON;
+	__O  uint32_t CONCLR;
+	__O  uint32_t CONSET;
+	__O  uint32_t CONINV;
+	__IO uint32_t STAT;
+	__O  uint32_t STATCLR;
+	__O  uint32_t STATSET;
+	__O  uint32_t STATINV;
+	__IO uint32_t BUF;
+	__I  uint32_t RESERVED0[3];
+	__IO uint32_t BRG;
+	__O  uint32_t BRGCLR;
+	__O  uint32_t BRGSET;
+	__O  uint32_t BRGINV;
+} SPI_reg_t;
+
 
 /** Declaration ***************************************************************/
 #define UART1_R                       ((UART_reg_t*) UART1_BASE)
@@ -66,6 +87,8 @@ typedef struct {
 #define TIMER3_R                      ((TIMER_reg_t*) TIMER3_BASE)
 #define TIMER4_R                      ((TIMER_reg_t*) TIMER4_BASE)
 #define TIMER5_R                      ((TIMER_reg_t*) TIMER5_BASE)
+#define SPI1_R                        ((SPI_reg_t*) SPI1_BASE)
+#define SPI2_R                        ((SPI_reg_t*) SPI2_BASE)
 
 /** Registers *****************************************************************/
 #define PIC32_TCON_ON                  (1 << 15)

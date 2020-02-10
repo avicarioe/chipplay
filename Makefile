@@ -35,6 +35,7 @@ CFLAGS += -DPIC32MX3
 CFLAGS += -DLOG_ENABLED
 CFLAGS += -DLOG_LEVEL_ENABLED=4
 CFLAGS += -DDEBUG
+CFLAGS += -std=gnu99
 
 # C++ flags common to all targets
 CXXFLAGS +=
