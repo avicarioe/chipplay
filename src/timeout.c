@@ -27,14 +27,7 @@ void timeout_init()
 	timer16_init(TIMER3_R, PIC32_TPSB_64, 1249);
 	timer16_start(TIMER3_R);
 
-	DISABLE_IRQ();
-
-	IPCCLR(3) = PIC32_IPC_TxIP_MASK | PIC32_IPC_TxIS_MASK;
-	IPCSET(3) = IRQ_PRIORITY_LOW << PIC32_IPC_TxIP_POS;
-	IECSET(0) = PIC32_IEC_T3IE;
-
-	ENABLE_IRQ();
-
+	TIMER16_ENABLE_INT(3, IRQ_PRIORITY_LOW);
 }
 
 void timeout_start(timeout_t* timeout, uint32_t ms)

@@ -22,3 +22,8 @@ void timer16_stop(TIMER_reg_t* reg)
 {
 	reg->CONCLR = PIC32_TCON_ON;
 }
+
+void timer16_set_pr(TIMER_reg_t* reg, uint16_t period)
+{
+	reg->PR = period;
+}
