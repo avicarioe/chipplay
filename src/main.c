@@ -12,6 +12,7 @@
 #include "timeout.h"
 #include "mmc.h"
 #include "ff.h"
+#include "pwm.h"
 
 /** Global variables **********************************************************/
 
@@ -48,18 +49,19 @@ int main(void)
 	LOG_WARN("Warning %s:%d", __FILE__, __LINE__);
 	LOG_ERROR("Error %s:%d", __FILE__, __LINE__);
 
-	timer16_init(TIMER2_R, PIC32_TPSB_256, 0x0000FFFFU);
-	timer16_start(TIMER2_R);
 	timeout_init();
+	pwm_init();
+
+	timer16_init(TIMER4_R, PIC32_TPSB_4, 399);
+	timer16_start(TIMER4_R);
 
 	DISABLE_IRQ();
 
-	IPCCLR(2) = PIC32_IPC_TxIP_MASK | PIC32_IPC_TxIS_MASK;
-	IPCSET(2) = IRQ_PRIORITY_LOW << PIC32_IPC_TxIP_POS;
-	IECSET(0) = PIC32_IEC_T2IE;
+	IPCCLR(4) = PIC32_IPC_TxIP_MASK | PIC32_IPC_TxIS_MASK;
+	IPCSET(4) = IRQ_PRIORITY_LOW << PIC32_IPC_TxIP_POS;
+	IECSET(0) = PIC32_IEC_T4IE;
 
 	ENABLE_IRQ();
-
 
 	mmc_init();
 
@@ -124,9 +126,27 @@ int main(void)
 	return 0;
 }
 
-__ISR(TIMER2)
+static const uint8_t table[] = {
+127, 130, 133, 135, 138, 141, 144, 146, 149, 151, 154, 156, 158, 161, 163,
+165, 166, 168, 170, 171, 173, 174, 175, 176, 176, 177, 178, 178, 178, 178,
+178, 177, 177, 176, 176, 175, 174, 172, 171, 170, 168, 166, 164, 162, 160,
+158, 156, 153, 151, 148, 146, 143, 140, 138, 135, 132, 129, 126, 124, 121,
+118, 115, 113, 110, 107, 105, 102, 100, 97, 95, 93, 91, 89, 87, 86, 84, 82,
+81, 80, 79, 78, 77, 77, 76, 76, 76, 76, 76, 77, 77, 78, 79, 80, 81, 82, 83,
+85, 86, 88, 90, 92, 94, 96, 99, 101, 104, 106, 109, 111, 114, 117, 120, 122,
+125
+};
+
+__ISR(TIMER4)
 {
-	IFSCLR(0) = PIC32_IFS_T2IF;
+	static uint32_t t = 0;
+	IFSCLR(0) = PIC32_IFS_T4IF;
+
+	uint8_t val = table[t++];
+	pwm_set(val);
+	if (t > sizeof(table)-1) {
+		t = 0;
+	}
+
 	return;
 }
-

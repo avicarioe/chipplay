@@ -32,6 +32,11 @@
 #define GPIOE_BASE        (PERIPHERALS_BASE + 0x86100)
 #define GPIOF_BASE        (PERIPHERALS_BASE + 0x86140)
 #define GPIOG_BASE        (PERIPHERALS_BASE + 0x86180)
+#define OC1_BASE          (PERIPHERALS_BASE + 0x3000)
+#define OC2_BASE          (PERIPHERALS_BASE + 0x3200)
+#define OC3_BASE          (PERIPHERALS_BASE + 0x3400)
+#define OC4_BASE          (PERIPHERALS_BASE + 0x3600)
+#define OC5_BASE          (PERIPHERALS_BASE + 0x3800)
 
 /** Register structures *******************************************************/
 typedef struct {
@@ -104,6 +109,20 @@ typedef struct {
 	__O  uint32_t OCDINV;
 } GPIO_reg_t;
 
+typedef struct {
+	__IO uint32_t CON;
+	__O  uint32_t CONCLR;
+	__O  uint32_t CONSET;
+	__O  uint32_t CONINV;
+	__IO uint32_t R;
+	__O  uint32_t RCLR;
+	__O  uint32_t RSET;
+	__O  uint32_t RINV;
+	__IO uint32_t RS;
+	__O  uint32_t RSCLR;
+	__O  uint32_t RSSET;
+	__O  uint32_t RSINV;
+} OC_reg_t;
 
 /** Declaration ***************************************************************/
 #define UART1_R                       ((UART_reg_t*) UART1_BASE)
@@ -122,6 +141,11 @@ typedef struct {
 #define GPIOE_R                       ((GPIO_reg_t*) GPIOE_BASE)
 #define GPIOF_R                       ((GPIO_reg_t*) GPIOF_BASE)
 #define GPIOG_R                       ((GPIO_reg_t*) GPIOG_BASE)
+#define OC1_R                         ((OC_reg_t*) OC1_BASE)
+#define OC2_R                         ((OC_reg_t*) OC2_BASE)
+#define OC3_R                         ((OC_reg_t*) OC3_BASE)
+#define OC4_R                         ((OC_reg_t*) OC4_BASE)
+#define OC5_R                         ((OC_reg_t*) OC5_BASE)
 
 /** Registers *****************************************************************/
 #define PIC32_TCON_ON                  (1 << 15)
@@ -132,7 +156,7 @@ typedef struct {
 #define PIC32_TCON_T32                 (1 << 3)
 #define PIC32_TCON_TCS                 (1 << 1)
 
-#define PIC33_IEC_T1IE                 (1 << 4)
+#define PIC32_IEC_T1IE                 (1 << 4)
 #define PIC32_IEC_T2IE                 (1 << 8)
 #define PIC32_IEC_T3IE                 (1 << 12)
 #define PIC32_IEC_T4IE                 (1 << 16)
@@ -148,6 +172,14 @@ typedef struct {
 #define PIC32_IPC_TxIP_MASK            (0b111 << 2)
 #define PIC32_IPC_TxIS_POS             (0)
 #define PIC32_IPC_TxIS_MASK            (0b11  << 0)
+
+#define PIC32_OCCON_ON                 (1 << 15)
+#define PIC32_OCCON_FRZ                (1 << 14)
+#define PIC32_OCCON_SIDL               (1 << 13)
+#define PIC32_OCCON_OC32               (1 << 5)
+#define PIC32_OCCON_OCFTL              (1 << 4)
+#define PIC32_OCCON_OCSEL              (1 << 3)
+#define PIC32_OCCON_CON_POS            (0)
 
 typedef enum {
 	PIC32_TPSA_256 = 0b11U,
@@ -166,6 +198,17 @@ typedef enum {
 	PIC32_TPSB_2   = 0b001U,
 	PIC32_TPSB_1   = 0b000U,
 } pic32_tpsb_t;
+
+typedef enum {
+	PIC32_OCCON_PWM_F  = 0b111U,
+	PIC32_OCCON_PWM    = 0b110U,
+	PIC32_OCCON_CONT   = 0b101U,
+	PIC32_OCCON_SINGLE = 0b100U,
+	PIC32_OCCON_TOGGLE = 0b011U,
+	PIC32_OCCON_LOW    = 0b010U,
+	PIC32_OCCON_HIGH   = 0b001U,
+	PIC32_OCCON_DIS    = 0b000U,
+} pic32_occon_t;
 
 
 #endif //__PERIPHERALS_H
