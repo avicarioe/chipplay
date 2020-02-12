@@ -27,7 +27,7 @@ extern void error_fault_handler(err_t err, uint32_t line, const char* file);
 		if (__local != SUCCESS)                                     \
 		{                                                           \
 			error_fault_handler(                                    \
-				__local, __LINE__, (const uint8_t *) __FILE__); \
+				__local, __LINE__, (const char *) __FILE__); \
 		}                                                           \
 	} while (0)
 

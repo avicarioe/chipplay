@@ -8,7 +8,7 @@ void spi_init(SPI_reg_t* reg)
 	reg->BUF = 0;
 
 	reg->BRG = SPI_BRG_FS(FREQ_BUS, SPI_DEFAULT_FREQ);
-	
+
 	reg->STATCLR = PIC32_SPISTAT_SPIROV;
 	reg->CONSET = PIC32_SPICON_MSTEN;
 	reg->CONSET = PIC32_SPICON_CKP;
@@ -25,21 +25,21 @@ void spi_set_freq(SPI_reg_t* reg, uint32_t freq)
 void spi_xfer(SPI_reg_t* reg, spi_xfer_t* xfer)
 {
 	uint16_t max = xfer->rx_len;
-	if (xfer->tx_len > max) {
+	if(xfer->tx_len > max) {
 		max = xfer->tx_len;
 	}
 
-	for (int i = 0; i < max; i++) {
+	for(int i = 0; i < max; i++) {
 		uint8_t rx;
 		uint8_t tx = 0xFF;
 
-		if (i < xfer->tx_len) {
+		if(i < xfer->tx_len) {
 			tx = xfer->tx_buff[i];
 		}
 
 		spi_single(reg, tx, &rx);
 
-		if (i < xfer->rx_len) {
+		if(i < xfer->rx_len) {
 			xfer->rx_buff[i] = rx;
 		}
 	}
@@ -48,9 +48,9 @@ void spi_xfer(SPI_reg_t* reg, spi_xfer_t* xfer)
 void spi_single(SPI_reg_t* reg, uint8_t tx, uint8_t* rx)
 {
 	while(!(reg->STAT & PIC32_SPISTAT_SPITBE));
-	
+
 	reg->BUF = tx;
-	
+
 	while(!(reg->STAT & PIC32_SPISTAT_SPIRBF));
 
 	*rx = reg->BUF;

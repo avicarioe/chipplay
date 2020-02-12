@@ -46,20 +46,22 @@ static bool check_chunk(uint8_t* data, uint32_t len);
 static bool process_fmt(wave_t* wave, wave_fmt_t* fmt);
 
 /** Callback definitions ******************************************************/
+
+/** Function definitions ******************************************************/
 static bool check_chunk(uint8_t* data, uint32_t len)
 {
 
-	if (len < sizeof(wave_chunk_t)) {
+	if(len < sizeof(wave_chunk_t)) {
 		return false;
 	}
 
 	wave_chunk_t* chunk = (wave_chunk_t*) data;
 
-	if (chunk->riff.value != STR_RIFF) {
+	if(chunk->riff.value != STR_RIFF) {
 		return false;
 	}
 
-	if (chunk->wave.value != STR_WAVE) {
+	if(chunk->wave.value != STR_WAVE) {
 		return false;
 	}
 
@@ -69,7 +71,7 @@ static bool check_chunk(uint8_t* data, uint32_t len)
 static bool process_fmt(wave_t* wave, wave_fmt_t* fmt)
 {
 
-	if (fmt->format != FORMAT_PCM) {
+	if(fmt->format != FORMAT_PCM) {
 		return false;
 	}
 
@@ -82,14 +84,12 @@ static bool process_fmt(wave_t* wave, wave_fmt_t* fmt)
 	return true;
 }
 
-/** Function definitions ******************************************************/
-
 /** Public functions **********************************************************/
- err_t wave_init(wave_t* wave, uint8_t* buff, uint32_t len, uint16_t* next)
+err_t wave_init(wave_t* wave, uint8_t* buff, uint32_t len, uint16_t* next)
 {
 	uint32_t pos = 0;
 
-	if (!check_chunk(buff, len)) {
+	if(!check_chunk(buff, len)) {
 		return ERR_INVALD_DATA;
 	}
 
@@ -97,13 +97,13 @@ static bool process_fmt(wave_t* wave, wave_fmt_t* fmt)
 
 	wave_sub_t* sub = (wave_sub_t*)(buff + pos);
 
-	while (sub->type.value != STR_DATA) { 
-		if (len - pos < sizeof(wave_sub_t)) {
+	while(sub->type.value != STR_DATA) {
+		if(len - pos < sizeof(wave_sub_t)) {
 			return ERR_INVALD_DATA;
 		}
 
-		if (sub->type.value == STR_FMT) {
-			if (!process_fmt(wave, (wave_fmt_t*) sub)) {
+		if(sub->type.value == STR_FMT) {
+			if(!process_fmt(wave, (wave_fmt_t*) sub)) {
 				return ERR_INVALD_DATA;
 			}
 		}
@@ -120,23 +120,46 @@ static bool process_fmt(wave_t* wave, wave_fmt_t* fmt)
 	return SUCCESS;
 }
 
- uint16_t wave_dec(wave_t* wave, wave_io_t* io, uint16_t* next)
+uint16_t wave_dec(wave_t* wave, wave_io_t* io, uint16_t* next)
 {
+	if(wave_end(wave)) {
+		*next = 0;
+		return 0;
+	}
+
 	uint16_t samples = io->in_len / wave->align;
 
-	if (io->out_len < samples) {
+	if(io->out_len < samples) {
 		samples = io->out_len;
 	}
 
-	if (wave->bpsample != 8) {
+	uint32_t left = (wave->length - wave->position) / wave->align;
+	if(left < samples) {
+		samples = left;
+	}
+
+	if(wave->bpsample != 8) {
 		return ERR_NOT_SUPPORTED;
 	}
 
-	for (int i = 0; i < samples; i++) {
+	for(int i = 0; i < samples; i++) {
 		io->out[i] = io->in[i * wave->align];
 	}
 
 	*next = samples * wave->align;
+	wave->position += *next;
 
 	return samples;
+}
+
+bool wave_end(wave_t* wave)
+{
+	return wave->position >= wave->length;
+}
+
+uint8_t wave_progress(wave_t* wave)
+{
+	uint32_t pos = wave->position;
+	pos *= 0xFF;
+	return pos / wave->length;
 }

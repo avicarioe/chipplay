@@ -80,15 +80,15 @@ HANDLER 51 UART7
 .set noreorder
 .ent _gen_exception
 _gen_exception:
-	mfc0 $k0, $14, 0
-	addi $k0, $k0, 4
-	mtc0 $k0, $14, 0
-	eret
-	nop
+mfc0 $k0, $14, 0
+addi $k0, $k0, 4
+mtc0 $k0, $14, 0
+eret
+nop
 
 .end _gen_exception
 
 .section _def_handler, "ax", @progbits
 DefaultHandler:
-	j DefaultHandler
-	nop
+j DefaultHandler
+nop

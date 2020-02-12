@@ -14,14 +14,16 @@
 #include "ff.h"
 #include "pwm.h"
 #include "wave.h"
+#include "circular.h"
 
 /** Global variables **********************************************************/
 static uint8_t buffer[2048];
-static uint8_t pcm1[2048];
-static uint8_t pcm2[2048];
-static volatile uint16_t samples1;
-static volatile uint16_t samples2;
+static uint8_t data[2048];
+static uint8_t pcm[512];
+static volatile uint16_t read_pos;
+static volatile uint16_t write_pos;
 static wave_t wave;
+static circular_t circular;
 
 /** Function prototypes *******************************************************/
 static void clock_initialization();
@@ -29,28 +31,8 @@ static void clock_initialization();
 /** Callback definitions ******************************************************/
 __ISR(TIMER4)
 {
-	static int reading = 0;
-	static uint16_t t = 0;
 	IFSCLR(0) = PIC32_IFS_T4IF;
-
-
-	if (reading == 1) {
-		pwm_set(pcm1[t++]);
-		if (t >= samples1) {
-			samples1 = 0;
-			t = 0;
-			reading = 2;
-		}
-	} else if (reading == 2) {
-		pwm_set(pcm2[t++]);
-		if (t >= samples2) {
-			samples2 = 0;
-			t = 0;
-			reading = 1;
-		}
-	} else if (reading == 0 && samples1) {
-		reading = 1;
-	}
+	pwm_set(circular_get(&circular));
 
 	return;
 }
@@ -80,6 +62,7 @@ int main(void)
 
 	timeout_init();
 	pwm_init();
+	circular_init(&circular, data, sizeof(data));
 
 	timer16_init(TIMER4_R, PIC32_TPSB_4, 452);
 	timer16_start(TIMER4_R);
@@ -112,52 +95,37 @@ int main(void)
 	LOG_INFO("Wave: %d, %d", ret, next);
 
 	LOG_INFO("Info: L: %d, ch: %d, sr: %d, br: %d, al: %d, bps: %d",
-			(unsigned int) wave.length, wave.channels,
-			(unsigned int) wave.sample_rate,
-			(unsigned int) wave.byte_rate,
-			wave.align, wave.bpsample);
+		(unsigned int) wave.length, wave.channels,
+		(unsigned int) wave.sample_rate,
+		(unsigned int) wave.byte_rate,
+		wave.align, wave.bpsample);
 
 	uint16_t offset = next;
 	wave_io_t io;
 
-	while (true) {
+
+	while(!wave_end(&wave)) {
+
+		while(circular_free(&circular) < sizeof(pcm));
 
 		io.in = buffer + offset;
 		io.in_len = sizeof(buffer) - offset;
-		io.out = pcm1;
-		io.out_len = sizeof(pcm1);
-		samples1 = wave_dec(&wave, &io, &next);
+		io.out = pcm;
+		io.out_len = sizeof(pcm);
+		uint32_t samples = wave_dec(&wave, &io, &next);
 
 		offset += next;
 
-		LOG_INFO("Wave1: %d, %d", samples1, next);
+		LOG_INFO("Wave: %d, %d", (unsigned int)samples, next);
+		LOG_INFO("Progress: %d", wave_progress(&wave));
 
-		if (offset == sizeof(buffer)) {
+		ERROR_CHECK(circular_write(&circular, pcm, samples));
+
+		if(offset == sizeof(buffer)) {
 			fr = f_read(&fil, buffer, sizeof(buffer), &br);
 			LOG_INFO("Read: %d, n: %d", fr, br);
 			offset = 0;
 		}
-
-		while (samples2);
-
-		io.in = buffer + offset;
-		io.in_len = sizeof(buffer) - offset;
-		io.out = pcm2;
-		io.out_len = sizeof(pcm2);
-		samples2 = wave_dec(&wave, &io, &next);
-
-		LOG_INFO("Wave2: %d, %d", samples2, next);
-
-		offset += next;
-
-		if (offset == sizeof(buffer)) {
-			fr = f_read(&fil, buffer, sizeof(buffer), &br);
-			LOG_INFO("Read: %d, n: %d", fr, br);
-			offset = 0;
-		}
-
-		while (samples1);
-
 	}
 
 

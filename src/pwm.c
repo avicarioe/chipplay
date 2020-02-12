@@ -9,7 +9,7 @@
 void pwm_init()
 {
 	OC_R->CON = 0;
-	
+
 	OC_R->RS = DEFAULT_DC;
 	OC_R->R = DEFAULT_DC;
 
