@@ -13,13 +13,47 @@
 #include "mmc.h"
 #include "ff.h"
 #include "pwm.h"
+#include "wave.h"
 
 /** Global variables **********************************************************/
+static uint8_t buffer[2048];
+static uint8_t pcm1[2048];
+static uint8_t pcm2[2048];
+static volatile uint16_t samples1;
+static volatile uint16_t samples2;
+static wave_t wave;
 
 /** Function prototypes *******************************************************/
 static void clock_initialization();
 
 /** Callback definitions ******************************************************/
+__ISR(TIMER4)
+{
+	static int reading = 0;
+	static uint16_t t = 0;
+	IFSCLR(0) = PIC32_IFS_T4IF;
+
+
+	if (reading == 1) {
+		pwm_set(pcm1[t++]);
+		if (t >= samples1) {
+			samples1 = 0;
+			t = 0;
+			reading = 2;
+		}
+	} else if (reading == 2) {
+		pwm_set(pcm2[t++]);
+		if (t >= samples2) {
+			samples2 = 0;
+			t = 0;
+			reading = 1;
+		}
+	} else if (reading == 0 && samples1) {
+		reading = 1;
+	}
+
+	return;
+}
 
 /** Function definitions ******************************************************/
 static void clock_initialization()
@@ -44,15 +78,10 @@ int main(void)
 
 	LOG_INFO(VERSION_INFO);
 
-	LOG_DEBUG("Debug %s:%d", __FILE__, __LINE__);
-	LOG_INFO("Info %s:%d", __FILE__, __LINE__);
-	LOG_WARN("Warning %s:%d", __FILE__, __LINE__);
-	LOG_ERROR("Error %s:%d", __FILE__, __LINE__);
-
 	timeout_init();
 	pwm_init();
 
-	timer16_init(TIMER4_R, PIC32_TPSB_4, 399);
+	timer16_init(TIMER4_R, PIC32_TPSB_4, 452);
 	timer16_start(TIMER4_R);
 
 	TIMER16_ENABLE_INT(4, IRQ_PRIORITY_LOW);
@@ -66,51 +95,72 @@ int main(void)
 
 	LOG_INFO("Mount: %d", fr);
 
-	DIR dr;
-
-	fr = f_opendir(&dr, "/");
-
-	LOG_INFO("Opendir: %d", fr);
-
-	FILINFO fno;
-
-	fr = f_readdir(&dr, &fno);
-
-	LOG_INFO("Readdir: %d", fr);
-
-	LOG_INFO("FILE size: %d, name %s", (int)fno.fsize, fno.fname);
-
 	FIL fil;
-	fr = f_open(&fil, fno.fname, FA_READ);
+	fr = f_open(&fil, "senorita.wav", FA_READ);
 
 	LOG_INFO("Open: %d", fr);
 
-	uint8_t buff[fno.fsize + 1];
 	UINT br;
 
-	fr = f_read(&fil, buff, fno.fsize, &br);
+	fr = f_read(&fil, buffer, sizeof(buffer), &br);
 
 	LOG_INFO("Read: %d, n: %d", fr, br);
 
-	for (int i=0; i < br; i++){
-		LOG_INFO("|%X|     %c", buff[i], (char)buff[i]);
+	uint16_t next;
+	err_t ret = wave_init(&wave, buffer, br, &next);
+
+	LOG_INFO("Wave: %d, %d", ret, next);
+
+	LOG_INFO("Info: L: %d, ch: %d, sr: %d, br: %d, al: %d, bps: %d",
+			(unsigned int) wave.length, wave.channels,
+			(unsigned int) wave.sample_rate,
+			(unsigned int) wave.byte_rate,
+			wave.align, wave.bpsample);
+
+	uint16_t offset = next;
+	wave_io_t io;
+
+	while (true) {
+
+		io.in = buffer + offset;
+		io.in_len = sizeof(buffer) - offset;
+		io.out = pcm1;
+		io.out_len = sizeof(pcm1);
+		samples1 = wave_dec(&wave, &io, &next);
+
+		offset += next;
+
+		LOG_INFO("Wave1: %d, %d", samples1, next);
+
+		if (offset == sizeof(buffer)) {
+			fr = f_read(&fil, buffer, sizeof(buffer), &br);
+			LOG_INFO("Read: %d, n: %d", fr, br);
+			offset = 0;
+		}
+
+		while (samples2);
+
+		io.in = buffer + offset;
+		io.in_len = sizeof(buffer) - offset;
+		io.out = pcm2;
+		io.out_len = sizeof(pcm2);
+		samples2 = wave_dec(&wave, &io, &next);
+
+		LOG_INFO("Wave2: %d, %d", samples2, next);
+
+		offset += next;
+
+		if (offset == sizeof(buffer)) {
+			fr = f_read(&fil, buffer, sizeof(buffer), &br);
+			LOG_INFO("Read: %d, n: %d", fr, br);
+			offset = 0;
+		}
+
+		while (samples1);
+
 	}
 
-	fr = f_readdir(&dr, &fno);
-	LOG_INFO("Readdir: %d", fr);
-	LOG_INFO("FILE size: %d, name %s", (int)fno.fsize, fno.fname);
-	fr = f_readdir(&dr, &fno);
-	LOG_INFO("Readdir: %d", fr);
-	LOG_INFO("FILE size: %d, name %s", (int)fno.fsize, fno.fname);
-	fr = f_readdir(&dr, &fno);
-	LOG_INFO("Readdir: %d", fr);
-	LOG_INFO("FILE size: %d, name %s", (int)fno.fsize, fno.fname);
-	fr = f_readdir(&dr, &fno);
-	LOG_INFO("Readdir: %d", fr);
-	LOG_INFO("FILE size: %d, name %s", (int)fno.fsize, fno.fname);
-	fr = f_readdir(&dr, &fno);
-	LOG_INFO("Readdir: %d", fr);
-	LOG_INFO("FILE size: %d, name %s", (int)fno.fsize, fno.fname);
+
 
 	for(;;) {
 		LOG_INFO("For");
@@ -120,27 +170,3 @@ int main(void)
 	return 0;
 }
 
-static const uint8_t table[] = {
-127, 130, 133, 135, 138, 141, 144, 146, 149, 151, 154, 156, 158, 161, 163,
-165, 166, 168, 170, 171, 173, 174, 175, 176, 176, 177, 178, 178, 178, 178,
-178, 177, 177, 176, 176, 175, 174, 172, 171, 170, 168, 166, 164, 162, 160,
-158, 156, 153, 151, 148, 146, 143, 140, 138, 135, 132, 129, 126, 124, 121,
-118, 115, 113, 110, 107, 105, 102, 100, 97, 95, 93, 91, 89, 87, 86, 84, 82,
-81, 80, 79, 78, 77, 77, 76, 76, 76, 76, 76, 77, 77, 78, 79, 80, 81, 82, 83,
-85, 86, 88, 90, 92, 94, 96, 99, 101, 104, 106, 109, 111, 114, 117, 120, 122,
-125
-};
-
-__ISR(TIMER4)
-{
-	static uint32_t t = 0;
-	IFSCLR(0) = PIC32_IFS_T4IF;
-
-	uint8_t val = table[t++];
-	pwm_set(val);
-	if (t > sizeof(table)-1) {
-		t = 0;
-	}
-
-	return;
-}

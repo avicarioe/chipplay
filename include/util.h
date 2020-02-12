@@ -13,6 +13,9 @@ typedef enum {
 	ERR_NO_MEM,
 	ERR_INVALID_STATE,
 	ERR_ASSERT_FAIL,
+	ERR_INVALD_DATA,
+	ERR_NOT_IMPLEMENTED,
+	ERR_NOT_SUPPORTED,
 } err_t;
 
 extern void error_fault_handler(err_t err, uint32_t line, const char* file);
