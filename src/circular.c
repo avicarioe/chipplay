@@ -13,13 +13,17 @@
 /** Public functions **********************************************************/
 void circular_init(circular_t* self, uint8_t* data, uint32_t len)
 {
+	self->data = data;
+	self->len = len;
+	self->write = 0;
+	self->read = 0;
 
 }
 
 uint32_t circular_used(circular_t* self)
 {
 	uint32_t rpos = self->read;
-	uint32_t wpos = self->read;
+	uint32_t wpos = self->write;
 
 	if(rpos <= wpos) {
 		return wpos - rpos;
@@ -55,7 +59,7 @@ err_t circular_write(circular_t* self, const uint8_t* data, uint32_t len)
 	}
 
 	uint32_t rpos = self->read;
-	uint32_t wpos = self->read;
+	uint32_t wpos = self->write;
 
 	if(rpos > wpos) {
 		memcpy(self->data + wpos, data, len);
@@ -70,6 +74,10 @@ err_t circular_write(circular_t* self, const uint8_t* data, uint32_t len)
 			memcpy(self->data, data + end, len - end);
 			wpos = len - end;
 		}
+	}
+
+	if (wpos >= self->len) {
+		wpos = 0;
 	}
 	self->write = wpos;
 	return SUCCESS;

@@ -20,8 +20,6 @@
 static uint8_t buffer[2048];
 static uint8_t data[2048];
 static uint8_t pcm[512];
-static volatile uint16_t read_pos;
-static volatile uint16_t write_pos;
 static wave_t wave;
 static circular_t circular;
 
@@ -103,7 +101,6 @@ int main(void)
 	uint16_t offset = next;
 	wave_io_t io;
 
-
 	while(!wave_end(&wave)) {
 
 		while(circular_free(&circular) < sizeof(pcm));
@@ -121,14 +118,14 @@ int main(void)
 
 		ERROR_CHECK(circular_write(&circular, pcm, samples));
 
-		if(offset == sizeof(buffer)) {
-			fr = f_read(&fil, buffer, sizeof(buffer), &br);
+		uint16_t left = sizeof(buffer) - offset;
+		if(left < sizeof(buffer)/4) {
+			memcpy(buffer, buffer + offset, left);
+			fr = f_read(&fil, buffer + left, sizeof(buffer) - left, &br);
 			LOG_INFO("Read: %d, n: %d", fr, br);
 			offset = 0;
 		}
 	}
-
-
 
 	for(;;) {
 		LOG_INFO("For");
