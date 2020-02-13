@@ -34,7 +34,8 @@ __ISR(TIMER4)
 
 	uint8_t left = circular_get(&pcm);
 	uint8_t right = circular_get(&pcm);
-	pwm_set((left + right)/2);
+	pwm_set(OC1_R, left);
+	pwm_set(OC2_R, right);
 
 	return;
 }
@@ -64,6 +65,8 @@ int main(void)
 
 	timeout_init();
 	pwm_init();
+	pwm_ch_init(OC1_R);
+	pwm_ch_init(OC2_R);
 	circular_init(&pcm, pcm_data, sizeof(pcm_data));
 	circular_init(&sd, sd_data, sizeof(sd_data));
 
@@ -123,7 +126,8 @@ int main(void)
 	while(circular_used(&pcm));
 
 	timer16_stop(TIMER4_R);
-	pwm_set(0);
+	pwm_set(OC1_R, 0);
+	pwm_set(OC2_R, 0);
 
 	for(;;) {
 		LOG_INFO("For");
