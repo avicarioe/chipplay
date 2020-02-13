@@ -20,7 +20,7 @@ void timer16_set_freq(TIMER_reg_t* reg, uint32_t freq)
 	ps_reg &= PIC32_TCON_TCKPS_MASK;
 	uint16_t ps = ps_lu[ps_reg];
 
-	uint32_t pr = FREQ_BUS/ps/freq - 1;
+	uint32_t pr = FREQ_BUS / ps / freq - 1;
 
 	reg->PR = pr;
 }

@@ -24,7 +24,7 @@ static void show_progress();
 /** Callback definitions ******************************************************/
 static void player_cb(player_evt_t evt)
 {
-	switch (evt) {
+	switch(evt) {
 	case PLAYER_EVT_END:
 		LOG_INFO("Play end success");
 		break;
@@ -49,7 +49,7 @@ static void show_progress()
 {
 	static timeout_t time;
 
-	if (!timeout_check(&time)) {
+	if(!timeout_check(&time)) {
 		timeout_start(&time, 1000);
 
 		LOG_INFO("Progress: %d", player_get_elapsed());

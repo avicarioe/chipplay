@@ -76,7 +76,7 @@ err_t circular_write(circular_t* self, const uint8_t* data, uint32_t len)
 		}
 	}
 
-	if (wpos >= self->len) {
+	if(wpos >= self->len) {
 		wpos = 0;
 	}
 	self->write = wpos;
@@ -91,11 +91,11 @@ void circular_clear(circular_t* self)
 
 err_t circular_read(circular_t* self, uint8_t* data, uint32_t len)
 {
-	if (len == 0) {
+	if(len == 0) {
 		return SUCCESS;
 	}
 
-	if (len > circular_used(self)) {
+	if(len > circular_used(self)) {
 		return ERR_NO_MEM;
 	}
 
@@ -117,7 +117,7 @@ err_t circular_read(circular_t* self, uint8_t* data, uint32_t len)
 		}
 	}
 
-	if (rpos >= self->len) {
+	if(rpos >= self->len) {
 		rpos = 0;
 	}
 
@@ -127,7 +127,7 @@ err_t circular_read(circular_t* self, uint8_t* data, uint32_t len)
 
 void circular_skip(circular_t* self, uint32_t len)
 {
-	if (len == 0) {
+	if(len == 0) {
 		return;
 	}
 
@@ -145,7 +145,7 @@ void circular_skip(circular_t* self, uint32_t len)
 		}
 	}
 
-	if (rpos >= self->len) {
+	if(rpos >= self->len) {
 		rpos = 0;
 	}
 
@@ -156,7 +156,7 @@ void circular_add(circular_t* self, uint8_t data)
 {
 	self->data[self->write++] = data;
 
-	if (self->write >= self->len) {
+	if(self->write >= self->len) {
 		self->write = 0;
 	}
 }

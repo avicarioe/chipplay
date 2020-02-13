@@ -23,7 +23,7 @@ typedef struct player_t {
 
 
 /** Global variables **********************************************************/
-static uint8_t buffer[1025];
+static uint8_t buffer[1024];
 static uint8_t sd_data[2048];
 static uint8_t pcm_data[2048];
 static player_t player;
@@ -51,7 +51,7 @@ __ISR(TIMER4)
 /** Function definitions ******************************************************/
 static void read_sd()
 {
-	if (player.fd == NULL) {
+	if(player.fd == NULL) {
 		return;
 	}
 
@@ -60,13 +60,13 @@ static void read_sd()
 		UINT br;
 		fr = f_read(player.fd, buffer, sizeof(buffer), &br);
 
-		if (fr != FR_OK) {
+		if(fr != FR_OK) {
 			player_stop();
 			player.cb(PLAYER_EVT_FS_ERR);
 			return;
 		}
 
-		if (br == sizeof(buffer)) {
+		if(br != sizeof(buffer)) {
 			player.fd = NULL;
 		}
 
@@ -76,10 +76,10 @@ static void read_sd()
 
 static void dec_wave()
 {
-	if (circular_used(&player.pcm) < 512) {
+	if(circular_used(&player.pcm) < 512) {
 		uint32_t samples = wave_dec(&player.wave);
 
-		if (samples == 0) {
+		if(samples == 0) {
 			player_stop();
 			player.cb(PLAYER_EVT_WV_ERR);
 			return;
@@ -117,7 +117,7 @@ err_t player_load(FIL* fd)
 
 	LOG_DEBUG("Read: %d, n: %d", fr, br);
 
-	if (fr != FR_OK) {
+	if(fr != FR_OK) {
 		return ERR_INTERNAL;
 	}
 
@@ -180,15 +180,16 @@ uint16_t player_get_elapsed()
 	return count / player.info.sample_rate;
 }
 
-void player_fire() {
-	if (player.fd == NULL && player.info.duration == 0) {
+void player_fire()
+{
+	if(player.fd == NULL && player.info.duration == 0) {
 		return;
-		
-	} else if (!wave_end(&player.wave)) {
+
+	} else if(!wave_end(&player.wave)) {
 		dec_wave();
 		read_sd();
 
-	} else if (!circular_used(&player.pcm)) {
+	} else if(!circular_used(&player.pcm)) {
 		player_stop();
 		player.cb(PLAYER_EVT_END);
 	}

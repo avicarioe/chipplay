@@ -53,7 +53,7 @@ static bool check_chunk(circular_t* in)
 {
 	wave_chunk_t chunk;
 
-	if (circular_read(in, (uint8_t*)&chunk, sizeof(chunk)) != SUCCESS) {
+	if(circular_read(in, (uint8_t*)&chunk, sizeof(chunk)) != SUCCESS) {
 		return false;
 	}
 
@@ -104,8 +104,8 @@ err_t wave_init(wave_t* wave, circular_t* in, circular_t* pcm)
 			wave_fmt_t fmt;
 			fmt.sub = sub;
 
-			RETURN_ON_ERROR(circular_read(in, (uint8_t*)&(fmt.format),
-						fmt.sub.size));
+			RETURN_ON_ERROR(circular_read(in, (uint8_t*) & (fmt.format),
+					fmt.sub.size));
 
 			if(!process_fmt(wave, &fmt)) {
 				return ERR_INVALD_DATA;
@@ -117,7 +117,7 @@ err_t wave_init(wave_t* wave, circular_t* in, circular_t* pcm)
 		RETURN_ON_ERROR(circular_read(in, (uint8_t*)&sub, sizeof(sub)));
 	}
 
-	if (wave->channels > 2) {
+	if(wave->channels > 2) {
 		return ERR_NOT_SUPPORTED;
 	}
 
@@ -135,7 +135,7 @@ uint16_t wave_dec(wave_t* wave)
 
 	uint16_t samples = circular_used(wave->in) / wave->align;
 
-	uint32_t out_free = circular_free(wave->pcm)/2;
+	uint32_t out_free = circular_free(wave->pcm) / 2;
 	if(out_free < samples) {
 		samples = out_free;
 	}
@@ -149,20 +149,20 @@ uint16_t wave_dec(wave_t* wave)
 		int32_t left = 0;
 		int32_t right = 0;
 
-		for(int j = 0; j < wave->bpsample/8; j++) {
-			left |= circular_get(wave->in) << (8*j);
+		for(int j = 0; j < wave->bpsample / 8; j++) {
+			left |= circular_get(wave->in) << (8 * j);
 		}
 
-		if (wave->channels >= 2) {
-			for(int j = 0; j < wave->bpsample/8; j++) {
-				right |= circular_get(wave->in) << (8*j);
+		if(wave->channels >= 2) {
+			for(int j = 0; j < wave->bpsample / 8; j++) {
+				right |= circular_get(wave->in) << (8 * j);
 			}
 		} else {
 			right = left;
 		}
 
 
-		if (wave->bpsample > 8) {
+		if(wave->bpsample > 8) {
 			left = (int8_t)(left >> (wave->bpsample - 8));
 			right = (int8_t)(right >> (wave->bpsample - 8));
 			left += 128;
