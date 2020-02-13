@@ -117,6 +117,10 @@ err_t wave_init(wave_t* wave, circular_t* in, circular_t* pcm)
 		RETURN_ON_ERROR(circular_read(in, (uint8_t*)&sub, sizeof(sub)));
 	}
 
+	if (wave->channels > 2) {
+		return ERR_NOT_SUPPORTED;
+	}
+
 	wave->length = sub.size;
 	wave->position = 0;
 
@@ -131,7 +135,7 @@ uint16_t wave_dec(wave_t* wave)
 
 	uint16_t samples = circular_used(wave->in) / wave->align;
 
-	uint32_t out_free = circular_free(wave->pcm);
+	uint32_t out_free = circular_free(wave->pcm)/2;
 	if(out_free < samples) {
 		samples = out_free;
 	}
@@ -141,14 +145,33 @@ uint16_t wave_dec(wave_t* wave)
 		samples = left;
 	}
 
-	if(wave->bpsample != 8) {
-		return ERR_NOT_SUPPORTED;
-	}
-
 	for(int i = 0; i < samples; i++) {
-		uint8_t sample = circular_get(wave->in); 
-		circular_skip(wave->in, wave->align - 1);
-		circular_add(wave->pcm, sample);
+		int32_t left = 0;
+		int32_t right = 0;
+
+		for(int j = 0; j < wave->bpsample/8; j++) {
+			left |= circular_get(wave->in) << (8*j);
+		}
+
+		if (wave->channels >= 2) {
+			for(int j = 0; j < wave->bpsample/8; j++) {
+				right |= circular_get(wave->in) << (8*j);
+			}
+		} else {
+			right = left;
+		}
+
+
+		if (wave->bpsample > 8) {
+			left = (int8_t)(left >> (wave->bpsample - 8));
+			right = (int8_t)(right >> (wave->bpsample - 8));
+			left += 128;
+			right += 128;
+		}
+
+		circular_add(wave->pcm, (uint8_t)(left & 0xFF));
+		circular_add(wave->pcm, (uint8_t)(right & 0xFF));
+
 	}
 
 	wave->position += samples * wave->align;

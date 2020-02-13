@@ -139,7 +139,7 @@ void circular_skip(circular_t* self, uint32_t len)
 	} else {
 		uint32_t end = self->len - rpos;
 		if(end >= len) {
-			wpos += len;
+			rpos += len;
 		} else {
 			rpos = len - end;
 		}

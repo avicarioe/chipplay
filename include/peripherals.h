@@ -153,6 +153,7 @@ typedef struct {
 #define PIC32_TCON_SIDL                (1 << 13)
 #define PIC32_TCON_TGATE               (1 << 7)
 #define PIC32_TCON_TCKPS_POS           (4)
+#define PIC32_TCON_TCKPS_MASK          (0b111)
 #define PIC32_TCON_T32                 (1 << 3)
 #define PIC32_TCON_TCS                 (1 << 1)
 

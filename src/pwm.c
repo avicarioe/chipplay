@@ -4,7 +4,7 @@
 #define TIMER_R   TIMER2_R //Do not change
 #define OC_R      OC1_R
 
-#define DEFAULT_DC 128
+#define DEFAULT_DC 0
 
 void pwm_init()
 {

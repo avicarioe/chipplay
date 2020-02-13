@@ -12,6 +12,7 @@
 	ENABLE_IRQ();
 
 void timer16_init(TIMER_reg_t* reg, pic32_tpsb_t ps, uint16_t period);
+void timer16_set_freq(TIMER_reg_t* reg, uint32_t freq);
 void timer16_start(TIMER_reg_t* reg);
 void timer16_stop(TIMER_reg_t* reg);
 void timer16_set_pr(TIMER_reg_t* reg, uint16_t period);
