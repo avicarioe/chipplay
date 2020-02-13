@@ -1,4 +1,5 @@
 #include "wave.h"
+#include "util.h"
 
 #define FORMAT_PCM 1
 
@@ -42,26 +43,25 @@ struct wave_fmt_t {
 /** Global variables **********************************************************/
 
 /** Function prototypes *******************************************************/
-static bool check_chunk(uint8_t* data, uint32_t len);
+static bool check_chunk(circular_t* in);
 static bool process_fmt(wave_t* wave, wave_fmt_t* fmt);
 
 /** Callback definitions ******************************************************/
 
 /** Function definitions ******************************************************/
-static bool check_chunk(uint8_t* data, uint32_t len)
+static bool check_chunk(circular_t* in)
 {
+	wave_chunk_t chunk;
 
-	if(len < sizeof(wave_chunk_t)) {
+	if (circular_read(in, (uint8_t*)&chunk, sizeof(chunk)) != SUCCESS) {
 		return false;
 	}
 
-	wave_chunk_t* chunk = (wave_chunk_t*) data;
-
-	if(chunk->riff.value != STR_RIFF) {
+	if(chunk.riff.value != STR_RIFF) {
 		return false;
 	}
 
-	if(chunk->wave.value != STR_WAVE) {
+	if(chunk.wave.value != STR_WAVE) {
 		return false;
 	}
 
@@ -85,52 +85,55 @@ static bool process_fmt(wave_t* wave, wave_fmt_t* fmt)
 }
 
 /** Public functions **********************************************************/
-err_t wave_init(wave_t* wave, uint8_t* buff, uint32_t len, uint16_t* next)
+err_t wave_init(wave_t* wave, circular_t* in, circular_t* pcm)
 {
-	uint32_t pos = 0;
+	wave->in = in;
+	wave->pcm = pcm;
 
-	if(!check_chunk(buff, len)) {
+	if(!check_chunk(in)) {
 		return ERR_INVALD_DATA;
 	}
 
-	pos += sizeof(wave_chunk_t);
+	wave_sub_t sub;
+	RETURN_ON_ERROR(circular_read(in, (uint8_t*)&sub, sizeof(sub)));
 
-	wave_sub_t* sub = (wave_sub_t*)(buff + pos);
 
-	while(sub->type.value != STR_DATA) {
-		if(len - pos < sizeof(wave_sub_t)) {
-			return ERR_INVALD_DATA;
-		}
+	while(sub.type.value != STR_DATA) {
 
-		if(sub->type.value == STR_FMT) {
-			if(!process_fmt(wave, (wave_fmt_t*) sub)) {
+		if(sub.type.value == STR_FMT) {
+			wave_fmt_t fmt;
+			fmt.sub = sub;
+
+			RETURN_ON_ERROR(circular_read(in, (uint8_t*)&(fmt.format),
+						fmt.sub.size));
+
+			if(!process_fmt(wave, &fmt)) {
 				return ERR_INVALD_DATA;
 			}
+		} else {
+			circular_skip(in, sub.size);
 		}
 
-		pos += sub->size +  sizeof(wave_sub_t);
-		sub = (wave_sub_t*)(buff + pos);
+		RETURN_ON_ERROR(circular_read(in, (uint8_t*)&sub, sizeof(sub)));
 	}
 
-	wave->length = sub->size;
+	wave->length = sub.size;
 	wave->position = 0;
-	pos += sizeof(wave_sub_t);
-	*next = pos;
 
 	return SUCCESS;
 }
 
-uint16_t wave_dec(wave_t* wave, wave_io_t* io, uint16_t* next)
+uint16_t wave_dec(wave_t* wave)
 {
 	if(wave_end(wave)) {
-		*next = 0;
 		return 0;
 	}
 
-	uint16_t samples = io->in_len / wave->align;
+	uint16_t samples = circular_used(wave->in) / wave->align;
 
-	if(io->out_len < samples) {
-		samples = io->out_len;
+	uint32_t out_free = circular_free(wave->pcm);
+	if(out_free < samples) {
+		samples = out_free;
 	}
 
 	uint32_t left = (wave->length - wave->position) / wave->align;
@@ -143,12 +146,12 @@ uint16_t wave_dec(wave_t* wave, wave_io_t* io, uint16_t* next)
 	}
 
 	for(int i = 0; i < samples; i++) {
-		io->out[i] = io->in[i * wave->align];
+		uint8_t sample = circular_get(wave->in); 
+		circular_skip(wave->in, wave->align - 1);
+		circular_add(wave->pcm, sample);
 	}
 
-	*next = samples * wave->align;
-	wave->position += *next;
-
+	wave->position += samples * wave->align;
 	return samples;
 }
 

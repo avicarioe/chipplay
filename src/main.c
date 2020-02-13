@@ -17,11 +17,12 @@
 #include "circular.h"
 
 /** Global variables **********************************************************/
-static uint8_t buffer[2048];
-static uint8_t data[2048];
-static uint8_t pcm[512];
+static uint8_t buffer[512];
+static uint8_t sd_data[2048];
+static uint8_t pcm_data[2048];
 static wave_t wave;
-static circular_t circular;
+static circular_t pcm;
+static circular_t sd;
 
 /** Function prototypes *******************************************************/
 static void clock_initialization();
@@ -30,7 +31,7 @@ static void clock_initialization();
 __ISR(TIMER4)
 {
 	IFSCLR(0) = PIC32_IFS_T4IF;
-	pwm_set(circular_get(&circular));
+	pwm_set(circular_get(&pcm));
 
 	return;
 }
@@ -60,7 +61,8 @@ int main(void)
 
 	timeout_init();
 	pwm_init();
-	circular_init(&circular, data, sizeof(data));
+	circular_init(&pcm, pcm_data, sizeof(pcm_data));
+	circular_init(&sd, sd_data, sizeof(sd_data));
 
 	timer16_init(TIMER4_R, PIC32_TPSB_4, 452);
 	timer16_start(TIMER4_R);
@@ -84,13 +86,13 @@ int main(void)
 	UINT br;
 
 	fr = f_read(&fil, buffer, sizeof(buffer), &br);
+	circular_write(&sd, buffer, br);
 
 	LOG_INFO("Read: %d, n: %d", fr, br);
 
-	uint16_t next;
-	err_t ret = wave_init(&wave, buffer, br, &next);
+	err_t ret = wave_init(&wave, &sd, &pcm);
 
-	LOG_INFO("Wave: %d, %d", ret, next);
+	LOG_INFO("Wave: %d", ret);
 
 	LOG_INFO("Info: L: %d, ch: %d, sr: %d, br: %d, al: %d, bps: %d",
 		(unsigned int) wave.length, wave.channels,
@@ -98,32 +100,20 @@ int main(void)
 		(unsigned int) wave.byte_rate,
 		wave.align, wave.bpsample);
 
-	uint16_t offset = next;
-	wave_io_t io;
-
 	while(!wave_end(&wave)) {
 
-		while(circular_free(&circular) < sizeof(pcm));
+		while(circular_free(&pcm) < sizeof(pcm));
 
-		io.in = buffer + offset;
-		io.in_len = sizeof(buffer) - offset;
-		io.out = pcm;
-		io.out_len = sizeof(pcm);
-		uint32_t samples = wave_dec(&wave, &io, &next);
+		if (circular_used(&pcm) < 512) {
+			uint32_t samples = wave_dec(&wave);
+			LOG_INFO("Wave: %d", (unsigned int)samples);
+			LOG_INFO("Progress: %d", wave_progress(&wave));
+		}
 
-		offset += next;
-
-		LOG_INFO("Wave: %d, %d", (unsigned int)samples, next);
-		LOG_INFO("Progress: %d", wave_progress(&wave));
-
-		ERROR_CHECK(circular_write(&circular, pcm, samples));
-
-		uint16_t left = sizeof(buffer) - offset;
-		if(left < sizeof(buffer)/4) {
-			memcpy(buffer, buffer + offset, left);
-			fr = f_read(&fil, buffer + left, sizeof(buffer) - left, &br);
+		if(circular_free(&sd) > sizeof(buffer)) {
+			fr = f_read(&fil, buffer, sizeof(buffer), &br);
+			circular_write(&sd, buffer, br);
 			LOG_INFO("Read: %d, n: %d", fr, br);
-			offset = 0;
 		}
 	}
 

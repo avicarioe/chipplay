@@ -89,3 +89,74 @@ void circular_clear(circular_t* self)
 	self->write = 0;
 }
 
+err_t circular_read(circular_t* self, uint8_t* data, uint32_t len)
+{
+	if (len == 0) {
+		return SUCCESS;
+	}
+
+	if (len > circular_used(self)) {
+		return ERR_NO_MEM;
+	}
+
+	uint32_t rpos = self->read;
+	uint32_t wpos = self->write;
+
+	if(rpos < wpos) {
+		memcpy(data, self->data + rpos, len);
+		rpos += len;
+	} else {
+		uint32_t end = self->len - rpos;
+		if(end >= len) {
+			memcpy(data, self->data + rpos, len);
+			wpos += len;
+		} else {
+			memcpy(data, self->data + rpos, end);
+			memcpy(data + end, self->data, len - end);
+			rpos = len - end;
+		}
+	}
+
+	if (rpos >= self->len) {
+		rpos = 0;
+	}
+
+	self->read = rpos;
+	return SUCCESS;
+}
+
+void circular_skip(circular_t* self, uint32_t len)
+{
+	if (len == 0) {
+		return;
+	}
+
+	uint32_t rpos = self->read;
+	uint32_t wpos = self->write;
+
+	if(rpos < wpos) {
+		rpos += len;
+	} else {
+		uint32_t end = self->len - rpos;
+		if(end >= len) {
+			wpos += len;
+		} else {
+			rpos = len - end;
+		}
+	}
+
+	if (rpos >= self->len) {
+		rpos = 0;
+	}
+
+	self->read = rpos;
+}
+
+void circular_add(circular_t* self, uint8_t data)
+{
+	self->data[self->write++] = data;
+
+	if (self->write >= self->len) {
+		self->write = 0;
+	}
+}
