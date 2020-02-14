@@ -60,7 +60,6 @@ static void show_progress()
 /** Main function *************************************************************/
 int main(void)
 {
-
 	clock_initialization();
 	uart_init(UART1_R, 115200);
 
@@ -95,12 +94,6 @@ int main(void)
 
 	const player_info_t* info = player_get_info();
 	LOG_INFO("Play start: %d", info->duration);
-
-	player_fire();
-	player_fire();
-	player_fire();
-	player_fire();
-	player_fire();
 
 	player_play();
 

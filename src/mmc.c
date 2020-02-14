@@ -18,7 +18,7 @@
 
 /* SPI bit rate controls */
 #define FCLK_SLOW()   spi_set_freq(SPI_REG, 250000U);
-#define FCLK_FAST()   spi_set_freq(SPI_REG, 4000000U);
+#define FCLK_FAST()   spi_set_freq(SPI_REG, 40000000U);
 
 /* Definitions for MMC/SDC command */
 #define CMD0   (0)          /* GO_IDLE_STATE */

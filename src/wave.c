@@ -79,7 +79,7 @@ static bool process_fmt(wave_t* wave, wave_fmt_t* fmt)
 	wave->sample_rate = fmt->sample_rate;
 	wave->byte_rate = fmt->byte_rate;
 	wave->align = fmt->align;
-	wave->bpsample = fmt->bpsample;
+	wave->bpsample = fmt->bpsample / 8;
 
 	return true;
 }
@@ -146,31 +146,28 @@ uint16_t wave_dec(wave_t* wave)
 	}
 
 	for(int i = 0; i < samples; i++) {
-		int32_t left = 0;
-		int32_t right = 0;
+		int8_t left = 0;
+		int8_t right = 0;
 
-		for(int j = 0; j < wave->bpsample / 8; j++) {
-			left |= circular_get(wave->in) << (8 * j);
-		}
+
+		circular_skip(wave->in, wave->bpsample - 1);
+		left = circular_get(wave->in);
 
 		if(wave->channels >= 2) {
-			for(int j = 0; j < wave->bpsample / 8; j++) {
-				right |= circular_get(wave->in) << (8 * j);
-			}
+			circular_skip(wave->in, wave->bpsample - 1);
+			right = circular_get(wave->in);
 		} else {
 			right = left;
 		}
 
 
-		if(wave->bpsample > 8) {
-			left = (int8_t)(left >> (wave->bpsample - 8));
-			right = (int8_t)(right >> (wave->bpsample - 8));
+		if(wave->bpsample > 1) {
 			left += 128;
 			right += 128;
 		}
 
-		circular_add(wave->pcm, (uint8_t)(left & 0xFF));
-		circular_add(wave->pcm, (uint8_t)(right & 0xFF));
+		circular_add(wave->pcm, (uint8_t)left);
+		circular_add(wave->pcm, (uint8_t)right);
 
 	}
 

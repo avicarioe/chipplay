@@ -160,3 +160,11 @@ void circular_add(circular_t* self, uint8_t data)
 		self->write = 0;
 	}
 }
+
+void circular_skip_one(circular_t* self)
+{
+	self->read++;
+	if(self->read >= self->len) {
+		self->read = 0;
+	}
+}

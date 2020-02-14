@@ -23,9 +23,9 @@ typedef struct player_t {
 
 
 /** Global variables **********************************************************/
-static uint8_t buffer[1024];
-static uint8_t sd_data[2048];
-static uint8_t pcm_data[2048];
+static uint8_t buffer[4056];
+static uint8_t sd_data[8192];
+static uint8_t pcm_data[8192];
 static player_t player;
 static volatile uint32_t count;
 
@@ -55,7 +55,7 @@ static void read_sd()
 		return;
 	}
 
-	if(circular_free(&player.sd) > sizeof(buffer)) {
+	if(circular_free(&player.sd) >= sizeof(buffer)) {
 		FRESULT fr;
 		UINT br;
 		fr = f_read(player.fd, buffer, sizeof(buffer), &br);
@@ -76,7 +76,7 @@ static void read_sd()
 
 static void dec_wave()
 {
-	if(circular_used(&player.pcm) < 512) {
+	if(circular_used(&player.pcm) <= sizeof(pcm_data) / 2) {
 		uint32_t samples = wave_dec(&player.wave);
 
 		if(samples == 0) {
