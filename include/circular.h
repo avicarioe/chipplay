@@ -19,6 +19,7 @@ uint32_t circular_free(circular_t* self);
 err_t circular_write(circular_t* self, const uint8_t* data, uint32_t len);
 void circular_clear(circular_t* self);
 err_t circular_read(circular_t* self, uint8_t* data, uint32_t len);
+err_t circular_peek(circular_t* self, uint8_t* data, uint32_t len);
 void circular_skip(circular_t* self, uint32_t len);
 void circular_skip_one(circular_t* self);
 void circular_add(circular_t* self, uint8_t data);

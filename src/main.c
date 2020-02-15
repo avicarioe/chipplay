@@ -57,6 +57,7 @@ static void show_progress()
 	}
 }
 
+
 /** Main function *************************************************************/
 int main(void)
 {

@@ -125,6 +125,34 @@ err_t circular_read(circular_t* self, uint8_t* data, uint32_t len)
 	return SUCCESS;
 }
 
+err_t circular_peek(circular_t* self, uint8_t* data, uint32_t len)
+{
+	if(len == 0) {
+		return SUCCESS;
+	}
+
+	if(len > circular_used(self)) {
+		return ERR_NO_MEM;
+	}
+
+	uint32_t rpos = self->read;
+	uint32_t wpos = self->write;
+
+	if(rpos < wpos) {
+		memcpy(data, self->data + rpos, len);
+	} else {
+		uint32_t end = self->len - rpos;
+		if(end >= len) {
+			memcpy(data, self->data + rpos, len);
+		} else {
+			memcpy(data, self->data + rpos, end);
+			memcpy(data + end, self->data, len - end);
+		}
+	}
+
+	return SUCCESS;
+}
+
 void circular_skip(circular_t* self, uint32_t len)
 {
 	if(len == 0) {
