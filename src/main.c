@@ -13,6 +13,7 @@
 #include "pwm.h"
 #include "interrupts.h"
 #include "player.h"
+#include "controls.h"
 
 #define MAX_FILES (30)
 #define MAX_LEN   (30)
@@ -26,8 +27,14 @@ static void clock_initialization();
 static void player_cb(FIL* fd, player_evt_t evt);
 static void show_progress();
 static void ls_wav(DIR* dp, char* names, uint8_t len_name, uint8_t* n_names);
+static void controls_cb(uint8_t evt);
 
 /** Callback definitions ******************************************************/
+static void controls_cb(uint8_t evt)
+{
+	LOG_INFO("Controls %d", evt);
+}
+
 static void player_cb(FIL* fd, player_evt_t evt)
 {
 	switch(evt) {
@@ -108,6 +115,7 @@ int main(void)
 
 	timeout_init();
 	pwm_init();
+	controls_init(controls_cb);
 
 	player_conf_t conf;
 	conf.cb = player_cb;
@@ -154,6 +162,7 @@ int main(void)
 	for(;;) {
 		player_fire();
 		show_progress();
+		controls_fire();
 	}
 
 	return 0;
