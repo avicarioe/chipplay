@@ -14,7 +14,7 @@ typedef enum {
 	PLAYER_EVT_WV_ERR,
 } player_evt_t;
 
-typedef void (*player_cb_t)(player_evt_t  evt);
+typedef void (*player_cb_t)(FIL* fd, player_evt_t  evt);
 
 typedef struct player_conf_t {
 	OC_reg_t* left_pwm;

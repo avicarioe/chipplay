@@ -63,7 +63,7 @@ static void read_sd()
 
 		if(fr != FR_OK) {
 			player_stop();
-			player.cb(PLAYER_EVT_FS_ERR);
+			player.cb(player.fd, PLAYER_EVT_FS_ERR);
 			return;
 		}
 
@@ -82,7 +82,7 @@ static void dec_wave()
 
 		if(samples == 0) {
 			player_stop();
-			player.cb(PLAYER_EVT_WV_ERR);
+			player.cb(player.fd, PLAYER_EVT_WV_ERR);
 			return;
 		}
 	}
@@ -192,6 +192,6 @@ void player_fire()
 
 	} else if(!circular_used(&player.pcm)) {
 		player_stop();
-		player.cb(PLAYER_EVT_END);
+		player.cb(player.fd, PLAYER_EVT_END);
 	}
 }
