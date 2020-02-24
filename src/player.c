@@ -8,7 +8,6 @@
 #include "timer16.h"
 #include "interrupts.h"
 #include "log.h"
-#include "fft8.h"
 
 #define TIMER_R TIMER4_R
 
@@ -34,7 +33,6 @@ static volatile uint32_t count;
 /** Function prototypes *******************************************************/
 static void read_sd();
 static void dec_wave();
-static void calc_freqs();
 
 /** Callback definitions ******************************************************/
 __ISR(TIMER4)
@@ -88,20 +86,6 @@ static void dec_wave()
 			return;
 		}
 	}
-}
-
-static void calc_freqs()
-{
-	uint8_t out[8];
-	uint8_t in[32];
-
-	circular_peek(&player.pcm, in, 32);
-
-	for (int i = 0; i < 31; i+=2) {
-		in[i/2] = (in[i] + in[i+1])/2;
-	}
-
-	ftt8_calc(in, out);
 }
 
 /** Public functions **********************************************************/
@@ -205,7 +189,6 @@ void player_fire()
 	} else if(!wave_end(&player.wave)) {
 		dec_wave();
 		read_sd();
-		calc_freqs();
 
 	} else if(!circular_used(&player.pcm)) {
 		player_stop();
