@@ -1,5 +1,6 @@
 #include "display.h"
 #include "timeout.h"
+#include <string.h>
 
 #define CMD_SETLOWCOLUMN         0x00
 #define CMD_SETHIGHCOLUMN        0x10
@@ -29,25 +30,16 @@
 #define CMD_SWITCHCAPVCC         0x02
 #define CMD_NOP                  0xE3
 
-#define DISPLAY_CHANGE_TO_COMMAND_MODE (PORTFCLR = 0x10)
-#define DISPLAY_CHANGE_TO_DATA_MODE (PORTFSET = 0x10)
-
-#define DISPLAY_ACTIVATE_RESET (PORTGCLR = 0x200)
-#define DISPLAY_DO_NOT_RESET (PORTGSET = 0x200)
-
-#define DISPLAY_ACTIVATE_VDD (PORTFCLR = 0x40)
-#define DISPLAY_ACTIVATE_VBAT (PORTFCLR = 0x20)
-
-#define DISPLAY_TURN_OFF_VDD (PORTFSET = 0x40)
-#define DISPLAY_TURN_OFF_VBAT (PORTFSET = 0x20)
-
 /** Global variables **********************************************************/
+extern const uint8_t const display_font[];
 
 /** Function prototypes *******************************************************/
 
 static void gpio_init(display_t* self);
 static void display_setup(display_t* self);
 static void send_command(display_t* self, uint8_t cmd);
+static void send_data(display_t* self, const uint8_t* data, uint8_t len);
+static void set_cursor(display_t* self, uint8_t line, uint8_t pos);
 
 /** Callback definitions ******************************************************/
 
@@ -80,7 +72,7 @@ static void display_setup(display_t* self) {
 	send_command(self, CMD_MEMORYMODE);
 	send_command(self, 0);
 
-	display_clear(self);
+	//display_clear(self);
 
 	self->vbat_port->PORTCLR = 1 << self->vbat_pin;
 	timeout_delay(100);
@@ -92,8 +84,6 @@ static void display_setup(display_t* self) {
 	send_command(self, 0x20);
 
 	send_command(self, CMD_DISPLAYON);
-
-	send_command(self, CMD_DISPLAYALLON);
 }
 
 static void gpio_init(display_t* self)
@@ -118,6 +108,27 @@ static void send_command(display_t* self, uint8_t cmd)
 	spi_single(self->spi, cmd, &rx);
 }
 
+static void send_data(display_t* self, const uint8_t* data, uint8_t len)
+{
+	self->dc_port->PORTSET = 1 << self->dc_pin;
+	spi_xfer_t xfer;
+	xfer.rx_buff = NULL;
+	xfer.rx_len = 0;
+	xfer.tx_buff = data;
+	xfer.tx_len = len;
+	spi_xfer(self->spi, &xfer);
+	self->dc_port->PORTCLR = 1 << self->dc_pin;
+}
+
+static void set_cursor(display_t* self, uint8_t line, uint8_t pos)
+{
+	send_command(self, CMD_PAGEADDR);
+	send_command(self, line);
+
+	send_command(self, CMD_SETLOWCOLUMN | (pos & 0x0F));
+	send_command(self, CMD_SETHIGHCOLUMN | (pos >> 4));
+}
+
 /** Public functions **********************************************************/
 err_t display_init(display_t* self, const display_conf_t* conf)
 {
@@ -140,10 +151,48 @@ err_t display_init(display_t* self, const display_conf_t* conf)
 	return SUCCESS;
 }
 void display_drawrect(display_t* self, display_rect_t* rect);
-void display_drawtext(display_t* self, const char* text, uint8_t line, uint8_t pos);
+
+void display_drawtext(display_t* self, const char* text, uint8_t line, uint8_t pos)
+{
+	ASSERT(line < DISPLAY_LINES);
+	ASSERT(pos < DISPLAY_COLUMNS);
+
+	set_cursor(self, line, pos*8);
+
+	int len = strlen(text);
+
+	if (len > 16 - pos) {
+		len = 16 - pos;
+	}
+
+	uint8_t buffer[len*8];
+
+	for (int i = 0; i < len; i++) {
+		char c = text[i];
+
+		if (c < DISPLAY_FONT_MIN || c >= DISPLAY_FONT_MIN + DISPLAY_FONT_SIZE) {
+			c = '?';
+		}
+
+		c = c - DISPLAY_FONT_MIN;
+
+		for (int j = 0; j < 8; j++) {
+			buffer[i*8 + j] = display_font[c*8 + j];
+		}
+	}
+
+	send_data(self, buffer, sizeof(buffer));
+}
+
 void display_drawicon(display_t* self, const display_rect_t* rect, const uint8_t* data);
 
 void display_clear(display_t* self)
 {
+	uint8_t buffer[DISPLAY_COLUMNS*8];
+	memset(buffer, 0, sizeof(buffer));
 
+	for (int i = 0; i < DISPLAY_LINES; i++) {
+		set_cursor(self, i, 0);
+		send_data(self, buffer, sizeof(buffer));
+	}
 }

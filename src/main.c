@@ -226,7 +226,7 @@ int main(void)
 
 	//fr = f_mount(&fs, "", 0);
 
-	LOG_DEBUG("Mount: %d", fr);
+	//LOG_DEBUG("Mount: %d", fr);
 
 	LOG_DEBUG("Init display");
 
@@ -242,6 +242,18 @@ int main(void)
 	dconf.dc_pin = 4;
 	display_init(&display, &dconf);
 
+	timeout_delay(1000);
+
+	display_clear(&display);
+
+	timeout_delay(1000);
+
+
+	LOG_INFO("Print1");
+	display_drawtext(&display, "Hello!", 2, 3);
+	LOG_INFO("Print2");
+	display_drawtext(&display, "Hello!", 3, 5);
+	LOG_INFO("Print3");
 
 	//DIR dp;
 

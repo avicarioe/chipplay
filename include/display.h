@@ -6,6 +6,10 @@
 #include "util.h"
 #include "spi.h"
 
+#define DISPLAY_FONT_SIZE (96)
+#define DISPLAY_FONT_MIN  (' ')
+#define DISPLAY_LINES     (4)
+#define DISPLAY_COLUMNS   (16)
 
 typedef struct display_t {
 	SPI_reg_t* spi;
