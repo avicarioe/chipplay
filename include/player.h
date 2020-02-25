@@ -7,6 +7,8 @@
 #include "ff.h"
 #include "util.h"
 
+#define PLAYER_MAX_VOLUME  (10)
+
 typedef enum {
 	PLAYER_EVT_END,
 	PLAYER_EVT_ERROR,
@@ -48,6 +50,8 @@ void player_stop();
 
 uint8_t player_progress();
 uint16_t player_get_elapsed();
+
+uint8_t player_volume_inc(int sign);
 
 void player_fire();
 

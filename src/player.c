@@ -20,6 +20,7 @@ typedef struct player_t {
 	wave_t wave;
 	FIL* fd;
 	player_info_t info;
+	uint8_t volume;
 } player_t;
 
 
@@ -30,6 +31,12 @@ static uint8_t sd_data[8192];
 static uint8_t pcm_data[8192];
 static volatile uint32_t count;
 
+static const uint8_t volume_lut[PLAYER_MAX_VOLUME + 1] = {
+	0, 4, 6, 9, 13, 18, 25, 35, 50, 71, 100};
+static const uint8_t volume_offset_lut[PLAYER_MAX_VOLUME + 1] = {
+	128, 123, 120, 116, 111, 105, 96, 83, 64, 37, 0};
+
+
 /** Function prototypes *******************************************************/
 static void read_sd();
 static void dec_wave();
@@ -39,8 +46,13 @@ __ISR(TIMER4)
 {
 	IFSCLR(0) = PIC32_IFS_T4IF;
 
-	uint8_t left = circular_get(&player.pcm);
-	uint8_t right = circular_get(&player.pcm);
+	uint8_t volume = volume_lut[player.volume];
+	uint8_t off = volume_offset_lut[player.volume];
+
+	uint16_t left = circular_get(&player.pcm);
+	uint16_t right = circular_get(&player.pcm);
+	left = (left*volume)/100 + off;
+	right = (right*volume)/100 + off;
 	pwm_set(player.left_pwm, left);
 	pwm_set(player.right_pwm, right);
 
@@ -95,6 +107,7 @@ void player_init(player_conf_t* conf)
 	player.right_pwm = conf->right_pwm;
 	player.cb = conf->cb;
 	player.info.status = PLAYER_STA_UNLOAD;
+	player.volume = PLAYER_MAX_VOLUME;
 
 	pwm_ch_init(player.left_pwm);
 	pwm_ch_init(player.right_pwm);
@@ -174,6 +187,17 @@ void player_stop()
 	circular_clear(&player.sd);
 	circular_clear(&player.pcm);
 	count = 0;
+}
+
+uint8_t player_volume_inc(int sign)
+{
+	if (sign > 0 && player.volume < PLAYER_MAX_VOLUME) {
+		player.volume++;
+	} else if (sign < 0 && player.volume > 0) {
+		player.volume--;
+	}
+
+	return player.volume;
 }
 
 uint8_t player_progress()

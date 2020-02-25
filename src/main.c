@@ -49,6 +49,9 @@ static void controls_cb(uint8_t evt)
 			p_file--;
 
 			load_file(files + p_file*MAX_LEN);
+		} else if (info->status == PLAYER_STA_PLAY) {
+			LOG_INFO("Vol dec");
+			player_volume_inc(-1);
 		}
 
 		break;
@@ -77,6 +80,9 @@ static void controls_cb(uint8_t evt)
 			}
 
 			load_file(files + p_file*MAX_LEN);
+		} else if (info->status == PLAYER_STA_PLAY) {
+			LOG_INFO("Vol inc");
+			player_volume_inc(1);
 		}
 
 		break;
