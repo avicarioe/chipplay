@@ -94,6 +94,7 @@ void player_init(player_conf_t* conf)
 	player.left_pwm = conf->left_pwm;
 	player.right_pwm = conf->right_pwm;
 	player.cb = conf->cb;
+	player.info.status = PLAYER_STA_UNLOAD;
 
 	pwm_ch_init(player.left_pwm);
 	pwm_ch_init(player.right_pwm);
@@ -138,6 +139,7 @@ err_t player_load(FIL* fd)
 	player.info.duration = player.wave.length / player.wave.byte_rate;
 	player.info.sample_rate = player.wave.sample_rate;
 	player.info.stereo = player.wave.channels > 1;
+	player.info.status = PLAYER_STA_STOP;
 	count = 0;
 
 	return SUCCESS;
@@ -152,11 +154,13 @@ void player_play()
 {
 	timer16_set_freq(TIMER_R, player.wave.sample_rate);
 	timer16_start(TIMER_R);
+	player.info.status = PLAYER_STA_PLAY;
 }
 
 void player_pause()
 {
 	timer16_stop(TIMER_R);
+	player.info.status = PLAYER_STA_PAUSE;
 }
 
 void player_stop()
@@ -166,6 +170,7 @@ void player_stop()
 	player.wave.length = 0;
 	player.wave.position = 0;
 	player.info.duration = 0;
+	player.info.status = PLAYER_STA_UNLOAD;
 	circular_clear(&player.sd);
 	circular_clear(&player.pcm);
 	count = 0;

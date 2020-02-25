@@ -24,7 +24,7 @@ extern void error_fault_handler(err_t err, uint32_t line, const char* file);
 #define ERROR_CHECK(__error_code)                                   \
 	do                                                              \
 	{                                                               \
-		const err_t __local = (__error_code);                       \
+		const uint32_t __local = (__error_code);                    \
 		if (__local != SUCCESS)                                     \
 		{                                                           \
 			error_fault_handler(                                    \

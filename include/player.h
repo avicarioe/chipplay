@@ -22,10 +22,18 @@ typedef struct player_conf_t {
 	player_cb_t cb;
 } player_conf_t;
 
+typedef enum {
+	PLAYER_STA_PLAY,
+	PLAYER_STA_STOP,
+	PLAYER_STA_PAUSE,
+	PLAYER_STA_UNLOAD,
+} player_sta_t;
+
 typedef struct player_info_t {
 	uint16_t duration;
 	uint16_t sample_rate;
 	bool stereo;
+	player_sta_t status;
 } player_info_t;
 
 void player_init(player_conf_t* conf);

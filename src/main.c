@@ -16,11 +16,13 @@
 #include "controls.h"
 
 #define MAX_FILES (30)
-#define MAX_LEN   (30)
+#define MAX_LEN   (40)
 
 /** Global variables **********************************************************/
 static char files[MAX_FILES*MAX_LEN];
 static uint8_t n_files;
+static uint8_t p_file;
+static FIL fil;
 
 /** Function prototypes *******************************************************/
 static void clock_initialization();
@@ -28,11 +30,60 @@ static void player_cb(FIL* fd, player_evt_t evt);
 static void show_progress();
 static void ls_wav(DIR* dp, char* names, uint8_t len_name, uint8_t* n_names);
 static void controls_cb(uint8_t evt);
+static void load_file(const char* filename);
 
 /** Callback definitions ******************************************************/
 static void controls_cb(uint8_t evt)
 {
 	LOG_INFO("Controls %d", evt);
+
+	const player_info_t* info = player_get_info();
+
+	switch (evt) {
+	case 0:
+		if (info->status == PLAYER_STA_STOP) {
+			if (p_file == 0) {
+				p_file = n_files;
+			}
+			
+			p_file--;
+
+			load_file(files + p_file*MAX_LEN);
+		}
+
+		break;
+	case 1:
+		if (info->status == PLAYER_STA_STOP ||
+				info->status == PLAYER_STA_PAUSE) {
+			LOG_INFO("Playing");
+			player_play();
+		} else if (info->status == PLAYER_STA_PLAY) {
+			LOG_INFO("Pause");
+			player_pause();
+		}
+
+		break;
+	case 2:
+		LOG_INFO("Stop");
+		load_file(files + p_file*MAX_LEN);
+
+		break;
+	case 3:
+		if (info->status == PLAYER_STA_STOP) {
+			p_file++;
+
+			if (p_file >= n_files) {
+				p_file = 0;
+			}
+
+			load_file(files + p_file*MAX_LEN);
+		}
+
+		break;
+	default:
+		LOG_WARN("Invalid control");
+		break;
+	}
 }
 
 static void player_cb(FIL* fd, player_evt_t evt)
@@ -67,6 +118,11 @@ static void show_progress()
 	if(!timeout_check(&time)) {
 		timeout_start(&time, 1000);
 
+		const player_info_t* info = player_get_info();
+		if (info->status != PLAYER_STA_PLAY) {
+			return;
+		}
+
 		LOG_INFO("Progress: %d", player_get_elapsed());
 
 	}
@@ -79,7 +135,7 @@ static void ls_wav(DIR* dp, char* names, uint8_t len_name, uint8_t* n_names)
 		FILINFO fno;
 		FRESULT fr;
 		fr = f_readdir(dp, &fno);
-		ERROR_CHECK((err_t)fr);
+		ERROR_CHECK(fr);
 
 		if (fno.fname[0] == '\0') {
 			break;
@@ -103,11 +159,34 @@ static void ls_wav(DIR* dp, char* names, uint8_t len_name, uint8_t* n_names)
 	*n_names = i;
 }
 
+static void load_file(const char* filename)
+{
+	FRESULT fr;
+
+	player_stop();
+
+	LOG_INFO("Load: %s", filename);
+
+	fr = f_open(&fil, filename, FA_READ);
+
+	LOG_DEBUG("Open: %d", fr);
+
+	ERROR_CHECK(fr);
+
+	ERROR_CHECK(player_load(&fil));
+
+	const player_info_t* info = player_get_info();
+	LOG_INFO("Play load: %d", info->duration);
+}
+
 /** Main function *************************************************************/
 int main(void)
 {
 	clock_initialization();
+
+#ifdef LOG_ENABLED
 	uart_init(UART1_R, 115200);
+#endif
 
 	INTERRUPTS_SET_MVEC();
 
@@ -142,22 +221,15 @@ int main(void)
 
 	LOG_DEBUG("Ls: %d", n_files);
 	
-
 	for (int i = 0; i < n_files; i++) {
 		LOG_DEBUG("File %d: %s", i, files + i*MAX_LEN);
 	}
 
-	FIL fil;
-	fr = f_open(&fil, "suicidal.wav", FA_READ);
+	if (n_files == 0) {
+		ERROR_CHECK(ERR_INVALD_DATA);
+	}
 
-	LOG_DEBUG("Open: %d", fr);
-
-	ERROR_CHECK(player_load(&fil));
-
-	const player_info_t* info = player_get_info();
-	LOG_INFO("Play start: %d", info->duration);
-
-	player_play();
+	load_file(files);
 
 	for(;;) {
 		player_fire();
