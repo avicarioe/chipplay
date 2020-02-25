@@ -14,6 +14,7 @@
 #include "interrupts.h"
 #include "player.h"
 #include "controls.h"
+#include "display.h"
 
 #define MAX_FILES (30)
 #define MAX_LEN   (40)
@@ -23,7 +24,7 @@ static char files[MAX_FILES*MAX_LEN];
 static uint8_t n_files;
 static uint8_t p_file;
 static FIL fil;
-
+static display_t display;
 /** Function prototypes *******************************************************/
 static void clock_initialization();
 static void player_cb(FIL* fd, player_evt_t evt);
@@ -45,8 +46,8 @@ static void controls_cb(uint8_t evt)
 		if (info->status == PLAYER_STA_STOP) {
 			load_next(-1);
 		} else if (info->status == PLAYER_STA_PLAY) {
-			uint8_t vol = player_volume_inc(-1);
-			LOG_INFO("Vol %d", vol);
+			//uint8_t vol = player_volume_inc(-1);
+			//LOG_INFO("Vol %d", vol);
 		}
 
 		break;
@@ -70,8 +71,8 @@ static void controls_cb(uint8_t evt)
 		if (info->status == PLAYER_STA_STOP) {
 			load_next(1);
 		} else if (info->status == PLAYER_STA_PLAY) {
-			uint8_t vol = player_volume_inc(1);
-			LOG_INFO("Vol %d", vol);
+			//uint8_t vol = player_volume_inc(1);
+			//LOG_INFO("Vol %d", vol);
 		}
 
 		break;
@@ -172,8 +173,8 @@ static void load_file(const char* filename)
 
 	ERROR_CHECK(player_load(&fil));
 
-	const player_info_t* info = player_get_info();
-	LOG_INFO("Play load: %d", info->duration);
+	//const player_info_t* info = player_get_info();
+	//LOG_INFO("Play load: %d", info->duration);
 }
 
 static void load_next(int sign)
@@ -207,50 +208,71 @@ int main(void)
 	LOG_INFO(VERSION_INFO);
 
 	timeout_init();
-	pwm_init();
-	controls_init(controls_cb);
+	//pwm_init();
+	//controls_init(controls_cb);
 
-	player_conf_t conf;
-	conf.cb = player_cb;
-	conf.left_pwm = OC1_R;
-	conf.right_pwm = OC2_R;
-	player_init(&conf);
+	//player_conf_t conf;
+	//conf.cb = player_cb;
+	//conf.left_pwm = OC1_R;
+	//conf.right_pwm = OC2_R;
+	//player_init(&conf);
 
-	mmc_init();
+	//mmc_init();
+	spi_init(SPI2_R);
+	spi_set_freq(SPI2_R, 1000000U);
 
-	FRESULT fr;
-	FATFS fs;
+	//FRESULT fr;
+	//FATFS fs;
 
-	fr = f_mount(&fs, "", 0);
+	//fr = f_mount(&fs, "", 0);
 
 	LOG_DEBUG("Mount: %d", fr);
 
-	DIR dp;
+	LOG_DEBUG("Init display");
 
-	fr = f_opendir(&dp, "/");
-	LOG_DEBUG("Opendir: %d", fr);
+	display_conf_t dconf;
+	dconf.spi = SPI2_R;
+	dconf.vdd_port = GPIOF_R;
+	dconf.vdd_pin = 6;
+	dconf.vbat_port = GPIOF_R;
+	dconf.vbat_pin = 5;
+	dconf.res_port = GPIOG_R;
+	dconf.res_pin = 9;
+	dconf.dc_port = GPIOF_R;
+	dconf.dc_pin = 4;
+	display_init(&display, &dconf);
 
-	n_files = MAX_FILES;
-	ls_wav(&dp, files, MAX_LEN, &n_files);
 
-	LOG_DEBUG("Ls: %d", n_files);
-	
-	for (int i = 0; i < n_files; i++) {
-		LOG_DEBUG("File %d: %s", i, files + i*MAX_LEN);
-	}
+	//DIR dp;
 
-	if (n_files == 0) {
-		ERROR_CHECK(ERR_INVALD_DATA);
-	}
+	//fr = f_opendir(&dp, "/");
+	//LOG_DEBUG("Opendir: %d", fr);
 
-	load_file(files);
+	//n_files = MAX_FILES;
+	//ls_wav(&dp, files, MAX_LEN, &n_files);
+
+	//LOG_DEBUG("Ls: %d", n_files);
+
+	//for (int i = 0; i < n_files; i++) {
+	//	LOG_DEBUG("File %d: %s", i, files + i*MAX_LEN);
+	//}
+
+	//if (n_files == 0) {
+	//	ERROR_CHECK(ERR_INVALD_DATA);
+	//}
+
+	//load_file(files);
 
 	for(;;) {
-		player_fire();
-		show_progress();
-		controls_fire();
+		//player_fire();
+		//show_progress();
+		//controls_fire();
 	}
+
+	show_progress();
+	ls_wav(NULL, files, MAX_LEN, &n_files);
+	controls_cb(0);
+	player_cb(NULL, 0);
 
 	return 0;
 }
-

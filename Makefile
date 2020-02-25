@@ -32,7 +32,7 @@ CFLAGS += -march=mips32r2
 # keep every function in a separate section, this allows linker to discard unused ones
 CFLAGS += -ffunction-sections -fdata-sections -fno-strict-aliasing
 CFLAGS += -DPIC32MX3
-CFLAGS += -DLOG_ENABLED
+#CFLAGS += -DLOG_ENABLED
 CFLAGS += -DLOG_LEVEL_ENABLED=4
 CFLAGS += -DDEBUG
 CFLAGS += -std=gnu99
