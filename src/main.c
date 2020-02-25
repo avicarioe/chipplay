@@ -31,6 +31,7 @@ static void show_progress();
 static void ls_wav(DIR* dp, char* names, uint8_t len_name, uint8_t* n_names);
 static void controls_cb(uint8_t evt);
 static void load_file(const char* filename);
+static void load_next(int sign);
 
 /** Callback definitions ******************************************************/
 static void controls_cb(uint8_t evt)
@@ -42,16 +43,10 @@ static void controls_cb(uint8_t evt)
 	switch (evt) {
 	case 0:
 		if (info->status == PLAYER_STA_STOP) {
-			if (p_file == 0) {
-				p_file = n_files;
-			}
-			
-			p_file--;
-
-			load_file(files + p_file*MAX_LEN);
+			load_next(-1);
 		} else if (info->status == PLAYER_STA_PLAY) {
-			LOG_INFO("Vol dec");
-			player_volume_inc(-1);
+			uint8_t vol = player_volume_inc(-1);
+			LOG_INFO("Vol %d", vol);
 		}
 
 		break;
@@ -73,16 +68,10 @@ static void controls_cb(uint8_t evt)
 		break;
 	case 3:
 		if (info->status == PLAYER_STA_STOP) {
-			p_file++;
-
-			if (p_file >= n_files) {
-				p_file = 0;
-			}
-
-			load_file(files + p_file*MAX_LEN);
+			load_next(1);
 		} else if (info->status == PLAYER_STA_PLAY) {
-			LOG_INFO("Vol inc");
-			player_volume_inc(1);
+			uint8_t vol = player_volume_inc(1);
+			LOG_INFO("Vol %d", vol);
 		}
 
 		break;
@@ -102,7 +91,8 @@ static void player_cb(FIL* fd, player_evt_t evt)
 		LOG_WARN("Play error: %d", evt);
 	}
 
-	f_close(fd);
+	load_next(1);
+	player_play();
 }
 
 /** Function definitions ******************************************************/
@@ -170,6 +160,7 @@ static void load_file(const char* filename)
 	FRESULT fr;
 
 	player_stop();
+	f_close(&fil);
 
 	LOG_INFO("Load: %s", filename);
 
@@ -183,6 +174,23 @@ static void load_file(const char* filename)
 
 	const player_info_t* info = player_get_info();
 	LOG_INFO("Play load: %d", info->duration);
+}
+
+static void load_next(int sign)
+{
+	if (sign > 0) {
+		p_file++;
+		if (p_file >= n_files) {
+			p_file = 0;
+		}
+	} else if (sign < 0) {
+		if (p_file == 0) {
+			p_file = n_files;
+		}
+		p_file--;
+	}
+
+	load_file(files + p_file*MAX_LEN);
 }
 
 /** Main function *************************************************************/
