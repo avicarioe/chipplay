@@ -1,4 +1,5 @@
 #include "display.h"
+#include "display_data.h"
 #include "timeout.h"
 #include <string.h>
 
@@ -31,15 +32,13 @@
 #define CMD_NOP                  0xE3
 
 /** Global variables **********************************************************/
-extern const uint8_t const display_font[];
 
 /** Function prototypes *******************************************************/
-
 static void gpio_init(display_t* self);
 static void display_setup(display_t* self);
 static void send_command(display_t* self, uint8_t cmd);
 static void send_data(display_t* self, const uint8_t* data, uint8_t len);
-static void set_cursor(display_t* self, uint8_t line, uint8_t pos);
+static void set_cursor(display_t* self, uint8_t line, uint8_t x);
 
 /** Callback definitions ******************************************************/
 
@@ -120,13 +119,12 @@ static void send_data(display_t* self, const uint8_t* data, uint8_t len)
 	self->dc_port->PORTCLR = 1 << self->dc_pin;
 }
 
-static void set_cursor(display_t* self, uint8_t line, uint8_t pos)
+static void set_cursor(display_t* self, uint8_t line, uint8_t x)
 {
-	send_command(self, CMD_PAGEADDR);
-	send_command(self, line);
+	send_command(self, CMD_SETPAGE | line);
 
-	send_command(self, CMD_SETLOWCOLUMN | (pos & 0x0F));
-	send_command(self, CMD_SETHIGHCOLUMN | (pos >> 4));
+	send_command(self, CMD_SETLOWCOLUMN | (x & 0x0F));
+	send_command(self, CMD_SETHIGHCOLUMN | (x >> 4));
 }
 
 /** Public functions **********************************************************/
@@ -150,14 +148,23 @@ err_t display_init(display_t* self, const display_conf_t* conf)
 
 	return SUCCESS;
 }
-void display_drawrect(display_t* self, display_rect_t* rect);
 
-void display_drawtext(display_t* self, const char* text, uint8_t line, uint8_t pos)
+void display_drawrect(display_t* self, const display_rect_t* rect,
+		const uint8_t* data)
+{
+	ASSERT(rect->line < DISPLAY_LINES);
+	ASSERT(rect->width + rect->x <= DISPLAY_WIDTH);
+
+	set_cursor(self, rect->line, rect->x);
+
+	send_data(self, data, rect->width);
+}
+
+void display_drawtext(display_t* self, const char* text, uint8_t line,
+		uint8_t pos)
 {
 	ASSERT(line < DISPLAY_LINES);
 	ASSERT(pos < DISPLAY_COLUMNS);
-
-	set_cursor(self, line, pos*8);
 
 	int len = strlen(text);
 
@@ -170,7 +177,7 @@ void display_drawtext(display_t* self, const char* text, uint8_t line, uint8_t p
 	for (int i = 0; i < len; i++) {
 		char c = text[i];
 
-		if (c < DISPLAY_FONT_MIN || c >= DISPLAY_FONT_MIN + DISPLAY_FONT_SIZE) {
+		if (c < DISPLAY_FONT_MIN) {
 			c = '?';
 		}
 
@@ -181,14 +188,24 @@ void display_drawtext(display_t* self, const char* text, uint8_t line, uint8_t p
 		}
 	}
 
+	set_cursor(self, line, pos*8);
 	send_data(self, buffer, sizeof(buffer));
 }
 
-void display_drawicon(display_t* self, const display_rect_t* rect, const uint8_t* data);
+void display_drawicon(display_t* self, uint8_t line, uint8_t x,
+		const uint8_t* data)
+{
+	display_rect_t rect;
+	rect.line = line;
+	rect.x = x;
+	rect.width = 8;
+
+	display_drawrect(self, &rect, data);
+}
 
 void display_clear(display_t* self)
 {
-	uint8_t buffer[DISPLAY_COLUMNS*8];
+	uint8_t buffer[DISPLAY_WIDTH];
 	memset(buffer, 0, sizeof(buffer));
 
 	for (int i = 0; i < DISPLAY_LINES; i++) {

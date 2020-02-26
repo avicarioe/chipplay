@@ -25,6 +25,16 @@ static uint8_t n_files;
 static uint8_t p_file;
 static FIL fil;
 static display_t display;
+
+static uint8_t arrow_left[8] = {0, 0xFE, 0x10, 0x38, 0x7C, 0xFE, 0x10, 0x38};
+static uint8_t arrow_right[8] = {0x38, 0x10, 0xFE, 0x7C, 0x38, 0x10, 0xFE, 0};
+static uint8_t arrowl_tail[8] = {0x7C, 0xFE, 0, 0, 0, 0, 0, 0};
+static uint8_t arrowr_tail[8] = {0, 0, 0, 0, 0, 0, 0xFE, 0x7C};
+static uint8_t sym_play[8] = {0xFF, 0xFF, 0x7E, 0x7E, 0x3C, 0x3C, 0x18, 0x18};
+static uint8_t sym_resume[8] = {0xFF, 0xFF, 0, 0xFF, 0x7E, 0x3C, 0x18, 0};
+static uint8_t sym_pause[8] = {0xFF, 0xFF, 0xFF, 0, 0, 0xFF, 0xFF, 0xFF};
+static uint8_t sym_stop[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+
 /** Function prototypes *******************************************************/
 static void clock_initialization();
 static void player_cb(FIL* fd, player_evt_t evt);
@@ -242,18 +252,58 @@ int main(void)
 	dconf.dc_pin = 4;
 	display_init(&display, &dconf);
 
-	timeout_delay(1000);
-
 	display_clear(&display);
 
-	timeout_delay(1000);
+	display_drawtext(&display, "wav", 0, 3);
+	display_drawtext(&display, "2:51", 2, 12);
+	display_drawtext(&display, "play  stop", 3, 3);
+	display_drawicon(&display, 3, 0, arrow_left);
+	display_drawicon(&display, 3, 8, arrowl_tail);
+	display_drawicon(&display, 3, 14*8, arrow_right);
+	display_drawicon(&display, 3, 13*8, arrowr_tail);
+
+	display_drawicon(&display, 0, 7*8, sym_play);
+	display_drawicon(&display, 0, 9*8, sym_stop);
+	display_drawicon(&display, 0, 11*8, sym_pause);
+	display_drawicon(&display, 0, 13*8, sym_resume);
+
+	uint8_t buffer[64];
+	display_rect_t rect;
+
+	for (int i = 0; true; i++) {
+
+		if (i > 60) {
+			i = 0;
+		}
+
+		rect.line = 1;
+		rect.width = sizeof(buffer);
+		rect.x = 20;
+
+		memset(buffer, 0x40, sizeof(buffer));
+		buffer[0] = 0xC0;
+		buffer[sizeof(buffer) - 1] = 0xC0;
+		
+
+		display_drawrect(&display, &rect, buffer);
 
 
-	LOG_INFO("Print1");
-	display_drawtext(&display, "Hello!", 2, 3);
-	LOG_INFO("Print2");
-	display_drawtext(&display, "Hello!", 3, 5);
-	LOG_INFO("Print3");
+		uint8_t progress = i;
+		memset(buffer + 2, 0x5F, progress);
+		memset(buffer + progress + 2, 0x40, sizeof(buffer) - progress - 2);
+		buffer[0] = 0x7F;
+		buffer[1] = 0x40;
+		buffer[sizeof(buffer) - 1] = 0x7F;
+
+		rect.line = 2;
+
+		display_drawrect(&display, &rect, buffer);
+
+		timeout_delay(100);
+	}
+
+
+	
 
 	//DIR dp;
 

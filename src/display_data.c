@@ -1,6 +1,7 @@
+#include "display_data.h"
 #include "display.h"
 
-const uint8_t const display_font[DISPLAY_FONT_SIZE*8] = {
+const uint8_t display_font[DISPLAY_FONT_SIZE*8] = {
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 94, 0, 0, 0, 0,
 	0, 0, 4, 3, 4, 3, 0, 0,
