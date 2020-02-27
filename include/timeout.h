@@ -13,5 +13,6 @@ void timeout_init();
 void timeout_start(timeout_t* timeout, uint32_t ms);
 bool timeout_check(timeout_t* timeout);
 void timeout_delay(uint32_t ms);
+uint32_t timeout_count();
 
 #endif // TIMEOUT_H__

@@ -24,7 +24,7 @@ void timeout_init()
 {
 	count = 0;
 
-	timer16_init(TIMER3_R, PIC32_TPSB_64, 1249);
+	timer16_init(TIMER3_R, PIC32_TPSB_64, 124);
 	timer16_start(TIMER3_R);
 
 	TIMER16_ENABLE_INT(3, IRQ_PRIORITY_LOW);
@@ -32,13 +32,13 @@ void timeout_init()
 
 void timeout_start(timeout_t* timeout, uint32_t ms)
 {
-	timeout->start = count;
+	timeout->start = count/10;
 	timeout->ms = ms;
 }
 
 bool timeout_check(timeout_t* timeout)
 {
-	uint32_t temp = count;
+	uint32_t temp = count/10;
 	return temp - timeout->start < timeout->ms;
 }
 
@@ -49,3 +49,7 @@ void timeout_delay(uint32_t ms)
 	while(timeout_check(&to));
 }
 
+uint32_t timeout_count()
+{
+	return count;
+}

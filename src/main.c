@@ -17,6 +17,7 @@
 #include "display.h"
 #include "i2c.h"
 #include "ui.h"
+#include "irc.h"
 
 #define MAX_FILES (30)
 #define MAX_LEN   (40)
@@ -37,6 +38,7 @@ static void ls_wav(DIR* dp, char* names, uint8_t len_name, uint8_t* n_names);
 static void controls_cb(uint8_t evt);
 static void load_file(const char* filename);
 static void load_next(int sign);
+static void irc_cb(uint16_t evt);
 
 /** Callback definitions ******************************************************/
 static void controls_cb(uint8_t evt)
@@ -84,6 +86,11 @@ static void controls_cb(uint8_t evt)
 		LOG_WARN("Invalid control");
 		break;
 	}
+}
+
+static void irc_cb(uint16_t evt)
+{
+	LOG_INFO("IRC: %x", evt);
 }
 
 static void player_cb(FIL* fd, player_evt_t evt)
@@ -214,6 +221,7 @@ int main(void)
 	timeout_init();
 	pwm_init();
 	controls_init(controls_cb);
+	irc_init(irc_cb);
 
 	player_conf_t conf;
 	conf.cb = player_cb;
@@ -263,6 +271,7 @@ int main(void)
 		show_progress();
 		controls_fire();
 		ui_play(&ui);
+		irc_fire();
 	}
 
 	return 0;

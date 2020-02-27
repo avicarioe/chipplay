@@ -195,7 +195,7 @@ typedef struct {
 #define PIC32_IEC_T4IE                 (1 << 16)
 #define PIC32_IEC_T5IE                 (1 << 20)
 
-#define PIC33_IFS_T1IF                 (1 << 4)
+#define PIC32_IFS_T1IF                 (1 << 4)
 #define PIC32_IFS_T2IF                 (1 << 8)
 #define PIC32_IFS_T3IF                 (1 << 12)
 #define PIC32_IFS_T4IF                 (1 << 16)
