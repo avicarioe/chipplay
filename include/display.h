@@ -39,5 +39,6 @@ void display_drawtext(display_t* self, const char* text, uint8_t line,
 void display_drawicon(display_t* self, uint8_t line, uint8_t x,
 		const uint8_t* data);
 void display_clear(display_t* self);
+void display_clear_line(display_t* self, uint8_t line);
 
 #endif // DISPLAY_H__

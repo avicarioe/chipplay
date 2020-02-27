@@ -1,8 +1,8 @@
 #ifndef __UTIL_H
 #define __UTIL_H
 
-#include "log.h"
 #include <stdint.h>
+#include <string.h>
 
 #define UNUSED_VARIABLE(X)  ((void)(X))
 

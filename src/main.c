@@ -120,7 +120,7 @@ static void player_cb(FIL* fd, player_evt_t evt)
 	}
 
 	load_next(1);
-	player_play();
+	play_pause(player_get_info());
 }
 
 /** Function definitions ******************************************************/
@@ -139,6 +139,7 @@ static void volinc(int8_t sign)
 {
 	uint8_t vol = player_volume_inc(sign);
 	LOG_INFO("Vol %d", vol);
+	ui_volume(&ui, vol);
 }
 
 static void play_pause(const player_info_t* info)
@@ -147,9 +148,11 @@ static void play_pause(const player_info_t* info)
 			info->status == PLAYER_STA_PAUSE) {
 		LOG_INFO("Playing");
 		player_play();
+		ui_play(&ui);
 	} else if (info->status == PLAYER_STA_PLAY) {
 		LOG_INFO("Pause");
 		player_pause();
+		ui_pause(&ui);
 	}
 }
 
@@ -166,7 +169,7 @@ static void show_progress()
 		}
 
 		LOG_INFO("Progress: %d", player_get_elapsed());
-
+		ui_setprogress(&ui, player_get_elapsed());
 	}
 }
 
@@ -220,6 +223,8 @@ static void load_file(const char* filename)
 
 	const player_info_t* info = player_get_info();
 	LOG_INFO("Play load: %d", info->duration);
+
+	ui_loadsong(&ui, filename, info);
 }
 
 static void load_next(int sign)
@@ -311,8 +316,8 @@ int main(void)
 		player_fire();
 		show_progress();
 		controls_fire();
-		ui_play(&ui);
 		irc_fire();
+		ui_fire(&ui);
 	}
 
 	return 0;

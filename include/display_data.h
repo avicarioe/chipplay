@@ -17,4 +17,6 @@ extern const uint8_t sym_resume[8];
 extern const uint8_t sym_pause[8];
 extern const uint8_t sym_stop[8];
 
+const uint8_t* sym_get(char c);
+
 #endif // DISPLAY_DATA_H__

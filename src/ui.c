@@ -3,35 +3,34 @@
 #include "display_data.h"
 #include "timeout.h"
 #include <string.h>
+#include <stdio.h>
 
 /** Global variables **********************************************************/
 
 /** Function prototypes *******************************************************/
+static void set_time(ui_t* self, uint16_t time);
+static void progress_rect(ui_t* self);
+static void text_center(ui_t* self, const char* text, uint8_t line);
 
 /** Callback definitions ******************************************************/
 
 /** Function definitions ******************************************************/
-err_t ui_init(ui_t* self, display_t* display)
+static void set_time(ui_t* self, uint16_t time)
 {
-	if (self == NULL || display == NULL) {
-		return ERR_NULL;
-	}
+	char buffer[6];
 
-	self->display = display;
+	uint8_t min = time/60;
+	uint8_t seg = time % 60;
 
-	display_drawtext(self->display, "Hello!.wav", 0, 3);
-	display_drawtext(self->display, "2:51", 4, 12);
-	display_drawtext(self->display, "play  stop", 7, 3);
-	display_drawicon(self->display, 7, 0, sym_left);
-	display_drawicon(self->display, 7, 8, sym_ltail);
-	display_drawicon(self->display, 7, 14*8, sym_right);
-	display_drawicon(self->display, 7, 13*8, sym_rtail);
+	min = min % 100;
 
-	display_drawicon(self->display, 2, 7*8, sym_play);
-	display_drawicon(self->display, 2, 9*8, sym_stop);
-	display_drawicon(self->display, 2, 11*8, sym_pause);
-	display_drawicon(self->display, 2, 13*8, sym_resume);
+	sprintf(buffer, "%2d:%02d", min, seg);
 
+	display_drawtext(self->display, buffer, 4, 11);
+}
+
+static void progress_rect(ui_t* self)
+{
 	uint8_t buffer[64];
 	display_rect_t rect;
 	rect.line = 3;
@@ -48,32 +47,95 @@ err_t ui_init(ui_t* self, display_t* display)
 	buffer[1] = 0x40;
 	buffer[sizeof(buffer) - 1] = 0x7F;
 
+	memset(buffer + 2, 0x40, 60);
+
+	display_drawrect(self->display, &rect, buffer);
+
+}
+
+static void text_center(ui_t* self, const char* text, uint8_t line)
+{
+	uint8_t len = strlen(text);
+
+	if (len > DISPLAY_COLUMNS) {
+		len = DISPLAY_COLUMNS;
+	}
+
+	char buffer[DISPLAY_COLUMNS];
+	memcpy(buffer, text, len);
+	buffer[len] = '\0';
+
+	uint8_t offset = DISPLAY_COLUMNS - len;
+	offset /= 2;
+	
+	display_clear_line(self->display, line);
+	display_drawtext(self->display, buffer, line, offset);
+}
+
+void ui_notify(ui_t* self, const char* text)
+{
+	text_center(self, text, 2);
+
+	timeout_start(&self->notify_timer, UI_NOTIFY_TIME);
+	self->notify = true;
+}
+
+/** Public functions **********************************************************/
+err_t ui_init(ui_t* self, display_t* display)
+{
+	if (self == NULL || display == NULL) {
+		return ERR_NULL;
+	}
+
+	self->display = display;
+
+	self->name_len = 0;
+	self->duration = 0;
+	self->notify = false;
+
 
 	return SUCCESS;
 }
 
 err_t ui_loadsong(ui_t* self, const char* name, const player_info_t* info)
 {
+	uint8_t len = strlen(name);
+	len -= 4;
 
-	return ERR_NOT_IMPLEMENTED;
-}
-
-void ui_setprogress(ui_t* self, uint8_t progress)
-{
-
-}
-
-void ui_play(ui_t* self)
-{
-	static uint8_t progress = 0;
-
-	static timeout_t time;
-
-	if(timeout_check(&time)) {
-		return;
+	if (len > UI_NAME_MAX) {
+		len = UI_NAME_MAX;
 	}
 
-	timeout_start(&time, 100);
+	memcpy(self->name, name, len);
+	self->name[len] = '\0';
+
+	self->name_len = len;
+
+	//TODO scroll name
+	text_center(self, self->name, 0);
+
+	progress_rect(self);
+
+	self->duration = info->duration;
+
+	set_time(self, self->duration);
+
+	display_drawicon(self->display, 4, 5, sym_stop);
+
+	display_clear_line(self->display, 7);
+	display_drawicon(self->display, 7, 40, sym_play);
+	display_drawicon(self->display, 7, 80, sym_stop);
+	display_drawicon(self->display, 7, 0, sym_left);
+	display_drawicon(self->display, 7, 8, sym_ltail);
+	display_drawicon(self->display, 7, 15*8, sym_right);
+	display_drawicon(self->display, 7, 14*8, sym_rtail);
+
+	return SUCCESS;
+}
+
+void ui_setprogress(ui_t* self, uint16_t elapsed)
+{
+	uint8_t progress = (elapsed*60)/self->duration;
 
 	uint8_t buffer[64];
 	display_rect_t rect;
@@ -89,14 +151,53 @@ void ui_play(ui_t* self)
 
 	display_drawrect(self->display, &rect, buffer);
 
-	progress++;
-	if (progress > 60) {
-		progress = 0;
-	}
+	set_time(self, elapsed);
+}
 
+void ui_play(ui_t* self)
+{
+	display_drawicon(self->display, 4, 5, sym_play);
+	ui_setprogress(self, 0);
+
+	display_clear_line(self->display, 7);
+	display_drawicon(self->display, 7, 40, sym_pause);
+	display_drawicon(self->display, 7, 80, sym_stop);
+	display_drawicon(self->display, 7, 8, sym_get('+'));
+	display_drawicon(self->display, 7, 14*8, sym_get('-'));
 }
 
 void ui_pause(ui_t* self)
 {
+	display_drawicon(self->display, 4, 5, sym_pause);
 
+	display_clear_line(self->display, 7);
+	display_drawicon(self->display, 7, 40, sym_resume);
+	display_drawicon(self->display, 7, 80, sym_stop);
+	display_drawicon(self->display, 7, 8, sym_get('+'));
+	display_drawicon(self->display, 7, 14*8, sym_get('-'));
+}
+
+void ui_volume(ui_t* self, uint8_t volume)
+{
+
+	display_clear_line(self->display, 1);
+
+	char buffer[8];
+
+	sprintf(buffer, "Vol: %02d", volume);
+	
+	ui_notify(self, buffer);
+}
+
+void ui_fire(ui_t* self)
+{
+	if(!timeout_check(&self->fps_timer)) {
+		//TODO animations
+		timeout_start(&self->fps_timer, UI_FPS_TIME);
+	}
+
+	if(self->notify && !timeout_check(&self->notify_timer)) {
+		self->notify = false;
+		display_clear_line(self->display, 2);
+	}
 }

@@ -183,10 +183,17 @@ void display_clear(display_t* self)
 	uint8_t buffer[DISPLAY_WIDTH];
 	memset(buffer, 0, sizeof(buffer));
 	
-	LOG_INFO("Display clear");
-
 	for (int i = 0; i < DISPLAY_LINES; i++) {
 		set_cursor(self, i, 0);
 		send_data(self, buffer, sizeof(buffer));
 	}
+}
+
+void display_clear_line(display_t* self, uint8_t line)
+{
+	uint8_t buffer[DISPLAY_WIDTH];
+	memset(buffer, 0, sizeof(buffer));
+
+	set_cursor(self, line, 0);
+	send_data(self, buffer, sizeof(buffer));
 }
