@@ -27,7 +27,7 @@ static char files[MAX_FILES*MAX_LEN];
 static uint8_t n_files;
 static uint8_t p_file;
 static FIL fil;
-static display_t display;
+display_t display;
 static ui_t ui;
 
 /** Function prototypes *******************************************************/

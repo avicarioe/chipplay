@@ -90,8 +90,14 @@ static void read_sd()
 
 static void dec_wave()
 {
+	if (circular_used(&player.sd) < player.wave.align &&
+			player.fd != NULL) {
+		return;
+	}
+
 	if(circular_used(&player.pcm) <= sizeof(pcm_data) / 2) {
 		uint32_t samples = wave_dec(&player.wave);
+		(void)samples;
 
 		if(samples == 0) {
 			player_stop();
