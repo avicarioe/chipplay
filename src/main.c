@@ -15,6 +15,7 @@
 #include "player.h"
 #include "controls.h"
 #include "display.h"
+#include "i2c.h"
 
 #define MAX_FILES (30)
 #define MAX_LEN   (40)
@@ -228,8 +229,7 @@ int main(void)
 	//player_init(&conf);
 
 	//mmc_init();
-	spi_init(SPI2_R);
-	spi_set_freq(SPI2_R, 1000000U);
+	i2c_init(I2C1_R, I2C_FREQ_400K);
 
 	//FRESULT fr;
 	//FATFS fs;
@@ -241,34 +241,39 @@ int main(void)
 	LOG_DEBUG("Init display");
 
 	display_conf_t dconf;
-	dconf.spi = SPI2_R;
-	dconf.vdd_port = GPIOF_R;
-	dconf.vdd_pin = 6;
-	dconf.vbat_port = GPIOF_R;
-	dconf.vbat_pin = 5;
-	dconf.res_port = GPIOG_R;
-	dconf.res_pin = 9;
-	dconf.dc_port = GPIOF_R;
-	dconf.dc_pin = 4;
+	dconf.i2c = I2C1_R;
+	dconf.addr = DISPLAY_ADDR_1;
 	display_init(&display, &dconf);
 
-	display_clear(&display);
+	display_drawtext(&display, "Hello!.wav", 0, 3);
+	display_drawtext(&display, "2:51", 4, 12);
+	display_drawtext(&display, "play  stop", 7, 3);
+	display_drawicon(&display, 7, 0, arrow_left);
+	display_drawicon(&display, 7, 8, arrowl_tail);
+	display_drawicon(&display, 7, 14*8, arrow_right);
+	display_drawicon(&display, 7, 13*8, arrowr_tail);
 
-	display_drawtext(&display, "wav", 0, 3);
-	display_drawtext(&display, "2:51", 2, 12);
-	display_drawtext(&display, "play  stop", 3, 3);
-	display_drawicon(&display, 3, 0, arrow_left);
-	display_drawicon(&display, 3, 8, arrowl_tail);
-	display_drawicon(&display, 3, 14*8, arrow_right);
-	display_drawicon(&display, 3, 13*8, arrowr_tail);
+	display_drawicon(&display, 2, 7*8, sym_play);
+	display_drawicon(&display, 2, 9*8, sym_stop);
+	display_drawicon(&display, 2, 11*8, sym_pause);
+	display_drawicon(&display, 2, 13*8, sym_resume);
 
-	display_drawicon(&display, 0, 7*8, sym_play);
-	display_drawicon(&display, 0, 9*8, sym_stop);
-	display_drawicon(&display, 0, 11*8, sym_pause);
-	display_drawicon(&display, 0, 13*8, sym_resume);
 
 	uint8_t buffer[64];
 	display_rect_t rect;
+	rect.line = 3;
+	rect.width = sizeof(buffer);
+	rect.x = 20;
+	memset(buffer, 0x40, sizeof(buffer));
+	buffer[0] = 0xC0;
+	buffer[sizeof(buffer) - 1] = 0xC0;
+
+	display_drawrect(&display, &rect, buffer);
+
+	rect.line = 4;
+	buffer[0] = 0x7F;
+	buffer[1] = 0x40;
+	buffer[sizeof(buffer) - 1] = 0x7F;
 
 	for (int i = 0; true; i++) {
 
@@ -276,33 +281,14 @@ int main(void)
 			i = 0;
 		}
 
-		rect.line = 1;
-		rect.width = sizeof(buffer);
-		rect.x = 20;
-
-		memset(buffer, 0x40, sizeof(buffer));
-		buffer[0] = 0xC0;
-		buffer[sizeof(buffer) - 1] = 0xC0;
-		
-
-		display_drawrect(&display, &rect, buffer);
-
-
 		uint8_t progress = i;
 		memset(buffer + 2, 0x5F, progress);
-		memset(buffer + progress + 2, 0x40, sizeof(buffer) - progress - 2);
-		buffer[0] = 0x7F;
-		buffer[1] = 0x40;
-		buffer[sizeof(buffer) - 1] = 0x7F;
-
-		rect.line = 2;
+		memset(buffer + progress + 2, 0x40, sizeof(buffer) - progress - 4);
 
 		display_drawrect(&display, &rect, buffer);
 
 		timeout_delay(100);
 	}
-
-
 	
 
 	//DIR dp;

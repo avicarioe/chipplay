@@ -17,6 +17,7 @@ typedef enum {
 	ERR_NOT_IMPLEMENTED,
 	ERR_NOT_SUPPORTED,
 	ERR_INTERNAL,
+	ERR_TIMEOUT,
 } err_t;
 
 extern void error_fault_handler(err_t err, uint32_t line, const char* file);

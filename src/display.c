@@ -1,3 +1,6 @@
+#define LOG_MODULE_NAME "i2c"
+#include "log.h"
+
 #include "display.h"
 #include "display_data.h"
 #include "timeout.h"
@@ -31,10 +34,12 @@
 #define CMD_SWITCHCAPVCC         0x02
 #define CMD_NOP                  0xE3
 
+#define START_CMD     0x00
+#define START_DATA    0x40
+
 /** Global variables **********************************************************/
 
 /** Function prototypes *******************************************************/
-static void gpio_init(display_t* self);
 static void display_setup(display_t* self);
 static void send_command(display_t* self, uint8_t cmd);
 static void send_data(display_t* self, const uint8_t* data, uint8_t len);
@@ -45,78 +50,55 @@ static void set_cursor(display_t* self, uint8_t line, uint8_t x);
 /** Function definitions ******************************************************/
 static void display_setup(display_t* self) {
 
-	self->vdd_port->PORTCLR = 1 << self->vdd_pin;
 	timeout_delay(100);
 
 	send_command(self, CMD_DISPLAYOFF);
-	self->res_port->PORTCLR = 1 << self->res_pin;
-	timeout_delay(10);
-	self->res_port->PORTSET = 1 << self->res_pin;
 	timeout_delay(10);
 
+	send_command(self, CMD_NORMALDISPLAY);
+	send_command(self, CMD_SETMULTIPLEX);
+	send_command(self, 63);
+	send_command(self, CMD_SETDISPLAYCLOCKDIV);
+	send_command(self, 0x80);
+	send_command(self, CMD_SETVCOMDETECT);
+	send_command(self, 0x20);
 	send_command(self, CMD_CHARGEPUMP);
 	send_command(self, 0x14);
-
 	send_command(self, CMD_SETPRECHARGE);
-	send_command(self, 0xF1);
-
+	send_command(self, 0x22);
 	send_command(self, CMD_SETDISPLAYOFFSET);
 	send_command(self, 0);
-
-	send_command(self, CMD_SETSTARTLINE | 0x00);
-
+	//send_command(self, CMD_SETSTARTLINE | 0x00);
 	send_command(self, CMD_SETCONTRAST);
 	send_command(self, 0x7F);
-
 	send_command(self, CMD_MEMORYMODE);
 	send_command(self, 0);
 
-	//display_clear(self);
+	display_clear(self);
+	timeout_delay(10);
 
-	self->vbat_port->PORTCLR = 1 << self->vbat_pin;
-	timeout_delay(100);
-
-	send_command(self, CMD_SEGREMAP | 1);
-	send_command(self, CMD_COMSCANDEC);
-
+	send_command(self, CMD_SEGREMAP | 0x00);
+	send_command(self, CMD_COMSCANINC);
 	send_command(self, CMD_SETCOMPINS);
-	send_command(self, 0x20);
+	send_command(self, 0x12);
 
 	send_command(self, CMD_DISPLAYON);
 }
 
-static void gpio_init(display_t* self)
-{
-	self->vdd_port->TRISCLR = 1 << self->vdd_pin;
-	self->vdd_port->PORTSET = 1 << self->vdd_pin;
-
-	self->vbat_port->TRISCLR = 1 << self->vbat_pin;
-	self->vbat_port->PORTSET = 1 << self->vbat_pin;
-
-	self->res_port->TRISCLR = 1 << self->res_pin;
-	self->res_port->PORTCLR = 1 << self->res_pin;
-
-	self->dc_port->TRISCLR = 1 << self->dc_pin;
-	self->dc_port->PORTCLR = 1 << self->dc_pin;
-}
-
 static void send_command(display_t* self, uint8_t cmd)
 {
-	self->dc_port->PORTCLR = 1 << self->dc_pin;
-	uint8_t rx;
-	spi_single(self->spi, cmd, &rx);
+	err_t rc = i2c_tx(self->i2c, self->addr, START_CMD, &cmd, 1, false);
+	if (rc != SUCCESS) {
+		LOG_WARN("Send command: %d", rc);
+	}
 }
 
 static void send_data(display_t* self, const uint8_t* data, uint8_t len)
 {
-	self->dc_port->PORTSET = 1 << self->dc_pin;
-	spi_xfer_t xfer;
-	xfer.rx_buff = NULL;
-	xfer.rx_len = 0;
-	xfer.tx_buff = data;
-	xfer.tx_len = len;
-	spi_xfer(self->spi, &xfer);
-	self->dc_port->PORTCLR = 1 << self->dc_pin;
+	err_t rc = i2c_tx(self->i2c, self->addr, START_DATA, data, len, true);
+	if (rc != SUCCESS) {
+		LOG_WARN("Send data: %d", rc);
+	}
 }
 
 static void set_cursor(display_t* self, uint8_t line, uint8_t x)
@@ -133,18 +115,11 @@ err_t display_init(display_t* self, const display_conf_t* conf)
 	if (self == NULL || conf == NULL) {
 		return ERR_NULL;
 	}
-	self->spi = conf->spi;
-	self->vdd_port = conf->vdd_port;
-	self->vdd_pin = conf->vdd_pin;
-	self->vbat_port = conf->vbat_port;
-	self->vbat_pin = conf->vbat_pin;
-	self->res_port = conf->res_port;
-	self->res_pin = conf->res_pin;
-	self->dc_port = conf->dc_port;
-	self->dc_pin = conf->dc_pin;
-	gpio_init(self);
-	display_setup(self);
 
+	self->i2c = conf->i2c;
+	self->addr = conf->addr;
+
+	display_setup(self);
 
 	return SUCCESS;
 }
@@ -207,6 +182,8 @@ void display_clear(display_t* self)
 {
 	uint8_t buffer[DISPLAY_WIDTH];
 	memset(buffer, 0, sizeof(buffer));
+	
+	LOG_INFO("Display clear");
 
 	for (int i = 0; i < DISPLAY_LINES; i++) {
 		set_cursor(self, i, 0);

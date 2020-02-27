@@ -37,6 +37,8 @@
 #define OC3_BASE          (PERIPHERALS_BASE + 0x3400)
 #define OC4_BASE          (PERIPHERALS_BASE + 0x3600)
 #define OC5_BASE          (PERIPHERALS_BASE + 0x3800)
+#define I2C1_BASE         (PERIPHERALS_BASE + 0x5000)
+#define I2C2_BASE         (PERIPHERALS_BASE + 0x5200)
 
 /** Register structures *******************************************************/
 typedef struct {
@@ -124,6 +126,34 @@ typedef struct {
 	__O  uint32_t RSINV;
 } OC_reg_t;
 
+typedef struct {
+	__IO uint32_t CON;
+	__O  uint32_t CONCLR;
+	__O  uint32_t CONSET;
+	__O  uint32_t CONINV;
+	__IO uint32_t STAT;
+	__O  uint32_t STATCLR;
+	__O  uint32_t STATSET;
+	__O  uint32_t STATINV;
+	__IO uint32_t ADD;
+	__O  uint32_t ADDCLR;
+	__O  uint32_t ADDSET;
+	__O  uint32_t ADDINV;
+	__IO uint32_t MSK;
+	__O  uint32_t MSKCLR;
+	__O  uint32_t MSKSET;
+	__O  uint32_t MSKINV;
+	__IO uint32_t BRG;
+	__O  uint32_t BRGCLR;
+	__O  uint32_t BRGSET;
+	__O  uint32_t BRGINV;
+	__IO uint32_t TRN;
+	__O  uint32_t TRNCLR;
+	__O  uint32_t TRNSET;
+	__O  uint32_t TRNINV;
+	__I  uint32_t RCV;
+} I2C_reg_t;
+
 /** Declaration ***************************************************************/
 #define UART1_R                       ((UART_reg_t*) UART1_BASE)
 #define UART2_R                       ((UART_reg_t*) UART2_BASE)
@@ -146,6 +176,8 @@ typedef struct {
 #define OC3_R                         ((OC_reg_t*) OC3_BASE)
 #define OC4_R                         ((OC_reg_t*) OC4_BASE)
 #define OC5_R                         ((OC_reg_t*) OC5_BASE)
+#define I2C1_R                        ((I2C_reg_t*) I2C1_BASE)
+#define I2C2_R                        ((I2C_reg_t*) I2C2_BASE)
 
 /** Registers *****************************************************************/
 #define PIC32_TCON_ON                  (1 << 15)
