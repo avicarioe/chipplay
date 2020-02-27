@@ -1,6 +1,8 @@
 # chipPLAY
 A minimalist audio player based on ChipKit uC32 board for IS1200 coruse in KTH.
 
+More information about the project can be found in the [Extended Abstract](ABSTRACT.md).
+
 ## Build
 If all the dependencies below are satisfied, to compile the project and upload it to a board it is only necessary to execute:
 
@@ -101,3 +103,5 @@ Optionally, the player can be controlled by four physical buttons, which are alr
 - [FatFs Reference](http://elm-chan.org/fsw/ff/00index_e.html)
 - [PIC32MX3/4 Family Datasheet](http://ww1.microchip.com/downloads/en/DeviceDoc/61143H.pdf)
 - [WAVE PCM soundfile format](http://soundfile.sapp.org/doc/WaveFormat/)
+- [SSD1306 Datasheet](https://cdn-shop.adafruit.com/datasheets/SSD1306.pdf)
+- [NEC Protocol reference](https://www.sbprojects.net/knowledge/ir/nec.php)
