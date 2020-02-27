@@ -15,30 +15,97 @@
 #define IPC_IS_MASK (0x03 << IPC_IS_POS)
 #define INT_PRIO    IRQ_PRIORITY_HIGH
 
+#define AGC_TH_MIN  (120)
+#define AGC_TH_MAX  (150)
+#define REPEAT_TH   (90)
+#define SYM_TH      (18)
+#define SYM_TH_MAX  (40)
+
+#define N_BITS      (32)
+
+typedef enum {
+	STATE_WAIT,
+	STATE_AGC,
+	STATE_DATA,
+	STATE_NEW,
+} state_t;
+
 /** Global variables **********************************************************/
 static irc_cb_t s_cb;
-static volatile uint32_t last_time;
-static volatile uint8_t times[34];
-static volatile uint8_t pos;
+static volatile uint8_t times[N_BITS];
+static volatile uint8_t n_bit;
+
+static volatile state_t state;
 
 /** Function prototypes *******************************************************/
+static uint8_t dec_byte(uint8_t* t);
 
 /** Callback definitions ******************************************************/
 __ISR(EXT1)
 {
+	static uint32_t last_time = 0;
+
 	IFSCLR(0) = EXT_INT_BIT;
 
-	if (pos < sizeof(times)) {
-		uint32_t time_temp = timeout_count();
-		times[pos++] = time_temp - last_time;
-		last_time = time_temp;
-	}
-	
+	uint32_t time_temp = timeout_count();
+	uint32_t diff = time_temp - last_time;
+	last_time = time_temp;
+
+	//LOG_INFO("agc %d %d", (unsigned int)diff, state);
+
+	switch (state) {
+	case STATE_WAIT:
+		state = STATE_AGC;
+
+		break;
+	case STATE_AGC:
+		if (diff > AGC_TH_MAX) {
+			state = STATE_AGC;
+		} else if (diff > AGC_TH_MIN) {
+			state = STATE_DATA;
+		} else {
+			state = STATE_WAIT;
+		}
+
+		break;
+	case STATE_DATA:
+		if (diff > SYM_TH_MAX) {
+			state = STATE_AGC;
+			n_bit = 0;
+
+		} else {
+			if (n_bit < N_BITS) {
+				times[n_bit] = diff;
+			}
+
+			n_bit++;
+			if (n_bit == N_BITS) {
+				state = STATE_NEW;
+			}
+		}
+
+	case STATE_NEW:
+
+		break;
+	default:
+		break;
+	};
 
 	return;
 }
 
 /** Function definitions ******************************************************/
+static uint8_t dec_byte(uint8_t* t)
+{
+	uint8_t byte = 0;
+
+	for (int i = 0; i < 8; i++) {
+		uint8_t sym = (t[i] > SYM_TH)? 1: 0;
+
+		byte |= sym << i;
+	}
+	return byte;
+}
 
 /** Public functions **********************************************************/
 void irc_init(irc_cb_t cb)
@@ -46,8 +113,8 @@ void irc_init(irc_cb_t cb)
 	ASSERT(cb != NULL);
 	s_cb = cb;
 
-	last_time = 0;
-	pos = 0;
+	n_bit = 0;
+	state = STATE_WAIT;
 
 	INT_PORT->TRISSET = (1 << INT_PIN);
 
@@ -62,15 +129,31 @@ void irc_init(irc_cb_t cb)
 
 }
 
-#include "log.h"
-
 void irc_fire()
 {
-	if (pos >= sizeof(times)) {
-		for (int i = 0; i < sizeof(times); i++) {
-			LOG_INFO("Time %d: %d: %d", i, times[i], times[i] > 18);
+	if (state == STATE_NEW) {
+		ASSERT(n_bit == N_BITS);
+
+		uint8_t t[N_BITS];
+
+		for (int i = 0; i < N_BITS; i++) {
+			t[i] = times[i];
 		}
-		s_cb(0);
-		pos = 0;
+
+		state = STATE_WAIT;
+		n_bit = 0;
+
+		uint8_t bytes[4];
+		for (int i = 0; i < sizeof(bytes); i++) {
+			bytes[i] = dec_byte(t + i*8);
+		}
+
+		uint16_t cmd = (bytes[0] << 8) | bytes[2];
+		uint16_t check = (bytes[1] << 8) | bytes[3];
+		check = ~check;
+
+		if (cmd == check) {
+			s_cb(cmd);
+		}
 	}
 }

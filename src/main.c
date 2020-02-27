@@ -90,7 +90,7 @@ static void controls_cb(uint8_t evt)
 
 static void irc_cb(uint16_t evt)
 {
-	LOG_INFO("IRC: %x", evt);
+	LOG_INFO("IRC: %X", evt);
 }
 
 static void player_cb(FIL* fd, player_evt_t evt)

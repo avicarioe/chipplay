@@ -74,6 +74,7 @@ static void read_sd()
 		fr = f_read(player.fd, buffer, sizeof(buffer), &br);
 
 		if(fr != FR_OK) {
+			LOG_WARN("Read err %d", fr);
 			player_stop();
 			player.cb(player.fd, PLAYER_EVT_FS_ERR);
 			return;
