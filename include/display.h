@@ -36,6 +36,8 @@ void display_drawrect(display_t* self, const display_rect_t* rect,
 		const uint8_t* data);
 void display_drawtext(display_t* self, const char* text, uint8_t line,
 		uint8_t pos);
+void display_drawtext_x(display_t* self, const char* text, uint8_t line,
+		int8_t x);
 void display_drawicon(display_t* self, uint8_t line, uint8_t x,
 		const uint8_t* data);
 void display_clear(display_t* self);

@@ -92,6 +92,8 @@ err_t ui_init(ui_t* self, display_t* display)
 	self->name_len = 0;
 	self->duration = 0;
 	self->notify = false;
+	self->scroll_pos = 0;
+	self->scroll_enable = false;
 
 
 	return SUCCESS;
@@ -111,8 +113,14 @@ err_t ui_loadsong(ui_t* self, const char* name, const player_info_t* info)
 
 	self->name_len = len;
 
-	//TODO scroll name
-	text_center(self, self->name, 0);
+	if (self->name_len > DISPLAY_COLUMNS) {
+		display_clear_line(self->display, 0);
+		self->scroll_pos = 40;
+		self->scroll_enable = true;
+	} else {
+		self->scroll_enable = false;
+		text_center(self, self->name, 0);
+	}
 
 	progress_rect(self);
 
@@ -157,13 +165,14 @@ void ui_setprogress(ui_t* self, uint16_t elapsed)
 void ui_play(ui_t* self)
 {
 	display_drawicon(self->display, 4, 5, sym_play);
-	ui_setprogress(self, 0);
 
 	display_clear_line(self->display, 7);
 	display_drawicon(self->display, 7, 40, sym_pause);
 	display_drawicon(self->display, 7, 80, sym_stop);
 	display_drawicon(self->display, 7, 8, sym_get('+'));
 	display_drawicon(self->display, 7, 14*8, sym_get('-'));
+
+	ui_notify(self, "Play!");
 }
 
 void ui_pause(ui_t* self)
@@ -175,6 +184,8 @@ void ui_pause(ui_t* self)
 	display_drawicon(self->display, 7, 80, sym_stop);
 	display_drawicon(self->display, 7, 8, sym_get('+'));
 	display_drawicon(self->display, 7, 14*8, sym_get('-'));
+
+	ui_notify(self, "Pause");
 }
 
 void ui_volume(ui_t* self, uint8_t volume)
@@ -191,9 +202,23 @@ void ui_volume(ui_t* self, uint8_t volume)
 
 void ui_fire(ui_t* self)
 {
-	if(!timeout_check(&self->fps_timer)) {
-		//TODO animations
+	if(self->scroll_enable && !timeout_check(&self->fps_timer)) {
 		timeout_start(&self->fps_timer, UI_FPS_TIME);
+
+		uint8_t off = 0;
+		int8_t pos_x = self->scroll_pos;
+		if (self->scroll_pos < 0) {
+			off = -self->scroll_pos/8;
+			pos_x = self->scroll_pos%8;
+		}
+
+		display_drawtext_x(self->display, self->name + off, 0, pos_x);
+		
+		self->scroll_pos--;
+
+		if (self->scroll_pos < -self->name_len*8) {
+			self->scroll_pos = 127;
+		}
 	}
 
 	if(self->notify && !timeout_check(&self->notify_timer)) {

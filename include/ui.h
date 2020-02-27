@@ -8,9 +8,9 @@
 #include "player.h"
 #include "timeout.h"
 
-#define UI_NAME_MAX     (DISPLAY_COLUMNS)
+#define UI_NAME_MAX     (DISPLAY_COLUMNS*3)
 #define UI_NOTIFY_TIME  (2500)
-#define UI_FPS_TIME     (200)
+#define UI_FPS_TIME     (100)
 
 typedef struct ui_t {
 	display_t* display;
@@ -20,6 +20,8 @@ typedef struct ui_t {
 	timeout_t notify_timer;
 	timeout_t fps_timer;
 	bool notify;
+	int scroll_pos;
+	bool scroll_enable;
 } ui_t;
 
 err_t ui_init(ui_t* self, display_t* display);

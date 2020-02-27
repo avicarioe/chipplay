@@ -64,7 +64,7 @@ static void controls_cb(uint8_t evt)
 		break;
 	case 2:
 		LOG_INFO("Stop");
-		load_file(files + p_file*MAX_LEN);
+		load_next(0);
 
 		break;
 	case 3:
@@ -102,6 +102,9 @@ static void irc_cb(uint16_t evt)
 		break;
 	case 0x0044: // Back
 		load_next(-1);
+		break;
+	case 0x0009: // Stop
+		load_next(0);
 		break;
 
 	default:

@@ -1,4 +1,4 @@
-#define LOG_MODULE_NAME "i2c"
+#define LOG_MODULE_NAME "disp"
 #include "log.h"
 
 #include "display.h"
@@ -68,7 +68,7 @@ static void display_setup(display_t* self) {
 	send_command(self, 0x22);
 	send_command(self, CMD_SETDISPLAYOFFSET);
 	send_command(self, 0);
-	//send_command(self, CMD_SETSTARTLINE | 0x00);
+	send_command(self, CMD_SETSTARTLINE | 0x00);
 	send_command(self, CMD_SETCONTRAST);
 	send_command(self, 0x7F);
 	send_command(self, CMD_MEMORYMODE);
@@ -138,19 +138,30 @@ void display_drawrect(display_t* self, const display_rect_t* rect,
 void display_drawtext(display_t* self, const char* text, uint8_t line,
 		uint8_t pos)
 {
+	display_drawtext_x(self, text, line, 8*pos);
+}
+
+void display_drawtext_x(display_t* self, const char* text, uint8_t line,
+		int8_t x)
+{
 	ASSERT(line < DISPLAY_LINES);
-	ASSERT(pos < DISPLAY_COLUMNS);
+	ASSERT(x >= -8);
 
-	int len = strlen(text);
+	int char_len = strlen(text);
+	int len = 8*char_len;
 
-	if (len > 16 - pos) {
-		len = 16 - pos;
+	if (len > DISPLAY_WIDTH - x) {
+		len = (DISPLAY_WIDTH - x);
 	}
 
-	uint8_t buffer[len*8];
+	uint8_t buffer[len];
 
-	for (int i = 0; i < len; i++) {
+	for (int i = 0; i < char_len; i++) {
 		char c = text[i];
+
+		if (i*8 > sizeof(buffer)) {
+			break;
+		}
 
 		if (c < DISPLAY_FONT_MIN) {
 			c = '?';
@@ -159,12 +170,22 @@ void display_drawtext(display_t* self, const char* text, uint8_t line,
 		c = c - DISPLAY_FONT_MIN;
 
 		for (int j = 0; j < 8; j++) {
+			if (i*8 + j >= sizeof(buffer)) {
+				break;
+			}
 			buffer[i*8 + j] = display_font[c*8 + j];
 		}
 	}
 
-	set_cursor(self, line, pos*8);
-	send_data(self, buffer, sizeof(buffer));
+	int8_t off = 0;
+
+	if (x < 0) {
+		off = -x;
+		x = 0;
+	}
+
+	set_cursor(self, line, x);
+	send_data(self, buffer + off, sizeof(buffer) - off);
 }
 
 void display_drawicon(display_t* self, uint8_t line, uint8_t x,
