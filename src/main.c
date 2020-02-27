@@ -39,6 +39,8 @@ static void controls_cb(uint8_t evt);
 static void load_file(const char* filename);
 static void load_next(int sign);
 static void irc_cb(uint16_t evt);
+static void volinc(int8_t sign);
+static void play_pause(const player_info_t* info);
 
 /** Callback definitions ******************************************************/
 static void controls_cb(uint8_t evt)
@@ -52,20 +54,12 @@ static void controls_cb(uint8_t evt)
 		if (info->status == PLAYER_STA_STOP) {
 			load_next(-1);
 		} else if (info->status == PLAYER_STA_PLAY) {
-			uint8_t vol = player_volume_inc(-1);
-			LOG_INFO("Vol %d", vol);
+			volinc(-1);
 		}
 
 		break;
 	case 1:
-		if (info->status == PLAYER_STA_STOP ||
-				info->status == PLAYER_STA_PAUSE) {
-			LOG_INFO("Playing");
-			player_play();
-		} else if (info->status == PLAYER_STA_PLAY) {
-			LOG_INFO("Pause");
-			player_pause();
-		}
+		play_pause(info);
 
 		break;
 	case 2:
@@ -77,8 +71,7 @@ static void controls_cb(uint8_t evt)
 		if (info->status == PLAYER_STA_STOP) {
 			load_next(1);
 		} else if (info->status == PLAYER_STA_PLAY) {
-			uint8_t vol = player_volume_inc(1);
-			LOG_INFO("Vol %d", vol);
+			volinc(1);
 		}
 
 		break;
@@ -90,7 +83,30 @@ static void controls_cb(uint8_t evt)
 
 static void irc_cb(uint16_t evt)
 {
-	LOG_INFO("IRC: %X", evt);
+	LOG_DEBUG("IRC: %X", evt);
+
+	const player_info_t* info = player_get_info();
+
+	switch(evt) {
+	case 0x0007: // Vol-
+		volinc(-1);
+		break;
+	case 0x0015: // Vol+
+		volinc(1);
+		break;
+	case 0x0043: // Play/pause
+		play_pause(info);
+		break;
+	case 0x0040: // Foward
+		load_next(1);
+		break;
+	case 0x0044: // Back
+		load_next(-1);
+		break;
+
+	default:
+		break;
+	}
 }
 
 static void player_cb(FIL* fd, player_evt_t evt)
@@ -117,6 +133,24 @@ static void clock_initialization()
 	OSCCONCLR = 0x180000;       /* clear PBDIV bit <0,1> */
 	while(OSCCON & (1 << 21));  /* Wait until PBDIV ready */
 	SYSKEY = 0x0;               /* Lock OSCCON */
+}
+
+static void volinc(int8_t sign)
+{
+	uint8_t vol = player_volume_inc(sign);
+	LOG_INFO("Vol %d", vol);
+}
+
+static void play_pause(const player_info_t* info)
+{
+	if (info->status == PLAYER_STA_STOP ||
+			info->status == PLAYER_STA_PAUSE) {
+		LOG_INFO("Playing");
+		player_play();
+	} else if (info->status == PLAYER_STA_PLAY) {
+		LOG_INFO("Pause");
+		player_pause();
+	}
 }
 
 static void show_progress()
@@ -202,7 +236,14 @@ static void load_next(int sign)
 		p_file--;
 	}
 
+	const player_info_t* info = player_get_info();
+	player_sta_t prev_status = info->status;
+
 	load_file(files + p_file*MAX_LEN);
+
+	if (prev_status == PLAYER_STA_PLAY) {
+		play_pause(info);
+	}
 }
 
 /** Main function *************************************************************/
