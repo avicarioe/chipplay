@@ -16,6 +16,7 @@
 #include "controls.h"
 #include "display.h"
 #include "i2c.h"
+#include "ui.h"
 
 #define MAX_FILES (30)
 #define MAX_LEN   (40)
@@ -26,15 +27,7 @@ static uint8_t n_files;
 static uint8_t p_file;
 static FIL fil;
 static display_t display;
-
-static uint8_t arrow_left[8] = {0, 0xFE, 0x10, 0x38, 0x7C, 0xFE, 0x10, 0x38};
-static uint8_t arrow_right[8] = {0x38, 0x10, 0xFE, 0x7C, 0x38, 0x10, 0xFE, 0};
-static uint8_t arrowl_tail[8] = {0x7C, 0xFE, 0, 0, 0, 0, 0, 0};
-static uint8_t arrowr_tail[8] = {0, 0, 0, 0, 0, 0, 0xFE, 0x7C};
-static uint8_t sym_play[8] = {0xFF, 0xFF, 0x7E, 0x7E, 0x3C, 0x3C, 0x18, 0x18};
-static uint8_t sym_resume[8] = {0xFF, 0xFF, 0, 0xFF, 0x7E, 0x3C, 0x18, 0};
-static uint8_t sym_pause[8] = {0xFF, 0xFF, 0xFF, 0, 0, 0xFF, 0xFF, 0xFF};
-static uint8_t sym_stop[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+static ui_t ui;
 
 /** Function prototypes *******************************************************/
 static void clock_initialization();
@@ -57,8 +50,8 @@ static void controls_cb(uint8_t evt)
 		if (info->status == PLAYER_STA_STOP) {
 			load_next(-1);
 		} else if (info->status == PLAYER_STA_PLAY) {
-			//uint8_t vol = player_volume_inc(-1);
-			//LOG_INFO("Vol %d", vol);
+			uint8_t vol = player_volume_inc(-1);
+			LOG_INFO("Vol %d", vol);
 		}
 
 		break;
@@ -82,8 +75,8 @@ static void controls_cb(uint8_t evt)
 		if (info->status == PLAYER_STA_STOP) {
 			load_next(1);
 		} else if (info->status == PLAYER_STA_PLAY) {
-			//uint8_t vol = player_volume_inc(1);
-			//LOG_INFO("Vol %d", vol);
+			uint8_t vol = player_volume_inc(1);
+			LOG_INFO("Vol %d", vol);
 		}
 
 		break;
@@ -184,8 +177,8 @@ static void load_file(const char* filename)
 
 	ERROR_CHECK(player_load(&fil));
 
-	//const player_info_t* info = player_get_info();
-	//LOG_INFO("Play load: %d", info->duration);
+	const player_info_t* info = player_get_info();
+	LOG_INFO("Play load: %d", info->duration);
 }
 
 static void load_next(int sign)
@@ -219,108 +212,58 @@ int main(void)
 	LOG_INFO(VERSION_INFO);
 
 	timeout_init();
-	//pwm_init();
-	//controls_init(controls_cb);
+	pwm_init();
+	controls_init(controls_cb);
 
-	//player_conf_t conf;
-	//conf.cb = player_cb;
-	//conf.left_pwm = OC1_R;
-	//conf.right_pwm = OC2_R;
-	//player_init(&conf);
+	player_conf_t conf;
+	conf.cb = player_cb;
+	conf.left_pwm = OC1_R;
+	conf.right_pwm = OC2_R;
+	player_init(&conf);
 
-	//mmc_init();
+	mmc_init();
 	i2c_init(I2C1_R, I2C_FREQ_400K);
 
-	//FRESULT fr;
-	//FATFS fs;
+	FRESULT fr;
+	FATFS fs;
 
-	//fr = f_mount(&fs, "", 0);
+	fr = f_mount(&fs, "", 0);
 
-	//LOG_DEBUG("Mount: %d", fr);
-
-	LOG_DEBUG("Init display");
+	LOG_DEBUG("Mount: %d", fr);
 
 	display_conf_t dconf;
 	dconf.i2c = I2C1_R;
 	dconf.addr = DISPLAY_ADDR_1;
 	display_init(&display, &dconf);
 
-	display_drawtext(&display, "Hello!.wav", 0, 3);
-	display_drawtext(&display, "2:51", 4, 12);
-	display_drawtext(&display, "play  stop", 7, 3);
-	display_drawicon(&display, 7, 0, arrow_left);
-	display_drawicon(&display, 7, 8, arrowl_tail);
-	display_drawicon(&display, 7, 14*8, arrow_right);
-	display_drawicon(&display, 7, 13*8, arrowr_tail);
+	ui_init(&ui, &display);
 
-	display_drawicon(&display, 2, 7*8, sym_play);
-	display_drawicon(&display, 2, 9*8, sym_stop);
-	display_drawicon(&display, 2, 11*8, sym_pause);
-	display_drawicon(&display, 2, 13*8, sym_resume);
+	DIR dp;
 
+	fr = f_opendir(&dp, "/");
+	LOG_DEBUG("Opendir: %d", fr);
 
-	uint8_t buffer[64];
-	display_rect_t rect;
-	rect.line = 3;
-	rect.width = sizeof(buffer);
-	rect.x = 20;
-	memset(buffer, 0x40, sizeof(buffer));
-	buffer[0] = 0xC0;
-	buffer[sizeof(buffer) - 1] = 0xC0;
+	n_files = MAX_FILES;
+	ls_wav(&dp, files, MAX_LEN, &n_files);
 
-	display_drawrect(&display, &rect, buffer);
+	LOG_DEBUG("Ls: %d", n_files);
 
-	rect.line = 4;
-	buffer[0] = 0x7F;
-	buffer[1] = 0x40;
-	buffer[sizeof(buffer) - 1] = 0x7F;
-
-	for (int i = 0; true; i++) {
-
-		if (i > 60) {
-			i = 0;
-		}
-
-		uint8_t progress = i;
-		memset(buffer + 2, 0x5F, progress);
-		memset(buffer + progress + 2, 0x40, sizeof(buffer) - progress - 4);
-
-		display_drawrect(&display, &rect, buffer);
-
-		timeout_delay(100);
+	for (int i = 0; i < n_files; i++) {
+		LOG_DEBUG("File %d: %s", i, files + i*MAX_LEN);
 	}
-	
 
-	//DIR dp;
+	if (n_files == 0) {
+		ERROR_CHECK(ERR_INVALD_DATA);
+	}
 
-	//fr = f_opendir(&dp, "/");
-	//LOG_DEBUG("Opendir: %d", fr);
-
-	//n_files = MAX_FILES;
-	//ls_wav(&dp, files, MAX_LEN, &n_files);
-
-	//LOG_DEBUG("Ls: %d", n_files);
-
-	//for (int i = 0; i < n_files; i++) {
-	//	LOG_DEBUG("File %d: %s", i, files + i*MAX_LEN);
-	//}
-
-	//if (n_files == 0) {
-	//	ERROR_CHECK(ERR_INVALD_DATA);
-	//}
-
-	//load_file(files);
+	load_file(files);
 
 	for(;;) {
-		//player_fire();
-		//show_progress();
-		//controls_fire();
+		player_fire();
+		show_progress();
+		controls_fire();
+		ui_play(&ui);
 	}
-
-	show_progress();
-	ls_wav(NULL, files, MAX_LEN, &n_files);
-	controls_cb(0);
-	player_cb(NULL, 0);
 
 	return 0;
 }
