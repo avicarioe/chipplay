@@ -32,7 +32,7 @@ Compare the quality of songs with other devices and check the reproduction speed
 
 - **Xiaoyu**: Controller interaction, user interface, screen control.
 
-- **FatFS**: The [FatFs library R0.14](http://elm-chan.org/fsw/ff/00index_e.html) has been used to read the FAT filesystem in the SD card. We also use some examples in the website as an inspiration for the MMC interface.
+- **FatFS**: The [FatFs library R0.14](http://elm-chan.org/fsw/ff/00index_e.html) has been used to read the FAT filesystem in the SD card. We also used some examples in the website as an inspiration for the MMC interface.
 
 ## Reflections:
 In the final abstract, we will discuss and reflect on what happened in the project.
