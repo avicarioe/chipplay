@@ -65,11 +65,11 @@ static void text_center(ui_t* self, const char* text, uint8_t line)
 	memcpy(buffer, text, len);
 	buffer[len] = '\0';
 
-	uint8_t offset = DISPLAY_COLUMNS - len;
+	uint8_t offset = DISPLAY_WIDTH - len*8;
 	offset /= 2;
-	
+
 	display_clear_line(self->display, line);
-	display_drawtext(self->display, buffer, line, offset);
+	display_drawtext_x(self->display, buffer, line, offset);
 }
 
 void ui_notify(ui_t* self, const char* text)
@@ -95,12 +95,13 @@ err_t ui_init(ui_t* self, display_t* display)
 	self->scroll_pos = 0;
 	self->scroll_enable = false;
 
-
 	return SUCCESS;
 }
 
 err_t ui_loadsong(ui_t* self, const char* name, const player_info_t* info)
 {
+	display_clear(self->display);
+
 	uint8_t len = strlen(name);
 	len -= 4;
 
@@ -196,8 +197,22 @@ void ui_volume(ui_t* self, uint8_t volume)
 	char buffer[8];
 
 	sprintf(buffer, "Vol: %02d", volume);
-	
+
 	ui_notify(self, buffer);
+}
+
+void ui_hello(ui_t* self)
+{
+	display_clear(self->display);
+	text_center(self, "chipKIT", 0);
+	text_center(self, "KTH IS1200", 1);
+
+	display_drawtext(self->display, "Alejandro Vic.", 3, 0);
+	display_drawtext(self->display, "Xiaoyu Wang", 4, 0);
+
+	text_center(self, __DATE__, 6);
+	text_center(self, __TIME__, 7);
+
 }
 
 void ui_fire(ui_t* self)
@@ -213,7 +228,7 @@ void ui_fire(ui_t* self)
 		}
 
 		display_drawtext_x(self->display, self->name + off, 0, pos_x);
-		
+
 		self->scroll_pos--;
 
 		if (self->scroll_pos < -self->name_len*8) {

@@ -32,5 +32,6 @@ void ui_pause(ui_t* self);
 void ui_volume(ui_t* self, uint8_t volume);
 void ui_fire(ui_t* self);
 void ui_notify(ui_t* self, const char* text);
+void ui_hello(ui_t* self);
 
 #endif // UI_H__

@@ -189,6 +189,11 @@ static void ls_wav(DIR* dp, char* names, uint8_t len_name, uint8_t* n_names)
 			break;
 		}
 
+		if (fno.fname[0] == '.'){
+			i--;
+			continue;
+		}
+
 		int len = strlen(fno.fname);
 
 		if (len > len_name - 1) {
@@ -249,7 +254,7 @@ static void load_next(int sign)
 
 	load_file(files + p_file*MAX_LEN);
 
-	if (prev_status == PLAYER_STA_PLAY) {
+	if (prev_status == PLAYER_STA_PLAY && sign != 0) {
 		play_pause(info);
 	}
 }
@@ -294,6 +299,7 @@ int main(void)
 	display_init(&display, &dconf);
 
 	ui_init(&ui, &display);
+	ui_hello(&ui);
 
 	DIR dp;
 
@@ -312,6 +318,8 @@ int main(void)
 	if (n_files == 0) {
 		ERROR_CHECK(ERR_INVALD_DATA);
 	}
+
+	timeout_delay(4000);
 
 	load_file(files);
 
