@@ -1,3 +1,19 @@
+/*
+@file: irc.c
+Copyright (C) 2020 by Alejandro Vicario, Xiaoyu Wang and chipPLAY contributors.
+This file is part of the chipPLAY project.
+ChipPLAY is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+ChipPLAY is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+You should have received a copy of the GNU General Public License
+along with ChipPlay.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include "irc.h"
 #include "peripherals.h"
 #include "interrupts.h"
@@ -53,15 +69,15 @@ __ISR(EXT1)
 
 	//LOG_INFO("agc %d %d", (unsigned int)diff, state);
 
-	switch (state) {
+	switch(state) {
 	case STATE_WAIT:
 		state = STATE_AGC;
 
 		break;
 	case STATE_AGC:
-		if (diff > AGC_TH_MAX) {
+		if(diff > AGC_TH_MAX) {
 			state = STATE_AGC;
-		} else if (diff > AGC_TH_MIN) {
+		} else if(diff > AGC_TH_MIN) {
 			state = STATE_DATA;
 		} else {
 			state = STATE_WAIT;
@@ -69,17 +85,17 @@ __ISR(EXT1)
 
 		break;
 	case STATE_DATA:
-		if (diff > SYM_TH_MAX) {
+		if(diff > SYM_TH_MAX) {
 			state = STATE_AGC;
 			n_bit = 0;
 
 		} else {
-			if (n_bit < N_BITS) {
+			if(n_bit < N_BITS) {
 				times[n_bit] = diff;
 			}
 
 			n_bit++;
-			if (n_bit == N_BITS) {
+			if(n_bit == N_BITS) {
 				state = STATE_NEW;
 			}
 		}
@@ -99,8 +115,8 @@ static uint8_t dec_byte(uint8_t* t)
 {
 	uint8_t byte = 0;
 
-	for (int i = 0; i < 8; i++) {
-		uint8_t sym = (t[i] > SYM_TH)? 1: 0;
+	for(int i = 0; i < 8; i++) {
+		uint8_t sym = (t[i] > SYM_TH) ? 1 : 0;
 
 		byte |= sym << i;
 	}
@@ -131,12 +147,12 @@ void irc_init(irc_cb_t cb)
 
 void irc_fire()
 {
-	if (state == STATE_NEW) {
+	if(state == STATE_NEW) {
 		ASSERT(n_bit == N_BITS);
 
 		uint8_t t[N_BITS];
 
-		for (int i = 0; i < N_BITS; i++) {
+		for(int i = 0; i < N_BITS; i++) {
 			t[i] = times[i];
 		}
 
@@ -144,15 +160,15 @@ void irc_fire()
 		n_bit = 0;
 
 		uint8_t bytes[4];
-		for (int i = 0; i < sizeof(bytes); i++) {
-			bytes[i] = dec_byte(t + i*8);
+		for(int i = 0; i < sizeof(bytes); i++) {
+			bytes[i] = dec_byte(t + i * 8);
 		}
 
 		uint16_t cmd = (bytes[0] << 8) | bytes[2];
 		uint16_t check = (bytes[1] << 8) | bytes[3];
 		check = ~check;
 
-		if (cmd == check) {
+		if(cmd == check) {
 			s_cb(cmd);
 		}
 	}

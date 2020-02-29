@@ -1,3 +1,19 @@
+/*
+@file: main.c
+Copyright (C) 2020 by Alejandro Vicario, Xiaoyu Wang and chipPLAY contributors.
+This file is part of the chipPLAY project.
+ChipPLAY is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+ChipPLAY is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+You should have received a copy of the GNU General Public License
+along with ChipPlay.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include "main.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -23,7 +39,7 @@
 #define MAX_LEN   (40)
 
 /** Global variables **********************************************************/
-static char files[MAX_FILES*MAX_LEN];
+static char files[MAX_FILES * MAX_LEN];
 static uint8_t n_files;
 static uint8_t p_file;
 static FIL fil;
@@ -49,11 +65,11 @@ static void controls_cb(uint8_t evt)
 
 	const player_info_t* info = player_get_info();
 
-	switch (evt) {
+	switch(evt) {
 	case 0:
-		if (info->status == PLAYER_STA_STOP) {
+		if(info->status == PLAYER_STA_STOP) {
 			load_next(-1);
-		} else if (info->status == PLAYER_STA_PLAY) {
+		} else if(info->status == PLAYER_STA_PLAY) {
 			volinc(-1);
 		}
 
@@ -68,9 +84,9 @@ static void controls_cb(uint8_t evt)
 
 		break;
 	case 3:
-		if (info->status == PLAYER_STA_STOP) {
+		if(info->status == PLAYER_STA_STOP) {
 			load_next(1);
-		} else if (info->status == PLAYER_STA_PLAY) {
+		} else if(info->status == PLAYER_STA_PLAY) {
 			volinc(1);
 		}
 
@@ -147,12 +163,12 @@ static void volinc(int8_t sign)
 
 static void play_pause(const player_info_t* info)
 {
-	if (info->status == PLAYER_STA_STOP ||
-			info->status == PLAYER_STA_PAUSE) {
+	if(info->status == PLAYER_STA_STOP ||
+		info->status == PLAYER_STA_PAUSE) {
 		LOG_INFO("Playing");
 		player_play();
 		ui_play(&ui);
-	} else if (info->status == PLAYER_STA_PLAY) {
+	} else if(info->status == PLAYER_STA_PLAY) {
 		LOG_INFO("Pause");
 		player_pause();
 		ui_pause(&ui);
@@ -167,7 +183,7 @@ static void show_progress()
 		timeout_start(&time, 1000);
 
 		const player_info_t* info = player_get_info();
-		if (info->status != PLAYER_STA_PLAY) {
+		if(info->status != PLAYER_STA_PLAY) {
 			return;
 		}
 
@@ -179,34 +195,34 @@ static void show_progress()
 static void ls_wav(DIR* dp, char* names, uint8_t len_name, uint8_t* n_names)
 {
 	int i;
-	for (i = 0; i < *n_names; i++) {
+	for(i = 0; i < *n_names; i++) {
 		FILINFO fno;
 		FRESULT fr;
 		fr = f_readdir(dp, &fno);
 		ERROR_CHECK(fr);
 
-		if (fno.fname[0] == '\0') {
+		if(fno.fname[0] == '\0') {
 			break;
 		}
 
-		if (fno.fname[0] == '.'){
+		if(fno.fname[0] == '.') {
 			i--;
 			continue;
 		}
 
 		int len = strlen(fno.fname);
 
-		if (len > len_name - 1) {
+		if(len > len_name - 1) {
 			i--;
 			continue;
 		}
 
-		if (strcmp(fno.fname + len - 4, ".wav") != 0) {
+		if(strcmp(fno.fname + len - 4, ".wav") != 0) {
 			i--;
 			continue;
 		}
 
-		strcpy(names + i*len_name, fno.fname);
+		strcpy(names + i * len_name, fno.fname);
 	}
 
 	*n_names = i;
@@ -237,13 +253,13 @@ static void load_file(const char* filename)
 
 static void load_next(int sign)
 {
-	if (sign > 0) {
+	if(sign > 0) {
 		p_file++;
-		if (p_file >= n_files) {
+		if(p_file >= n_files) {
 			p_file = 0;
 		}
-	} else if (sign < 0) {
-		if (p_file == 0) {
+	} else if(sign < 0) {
+		if(p_file == 0) {
 			p_file = n_files;
 		}
 		p_file--;
@@ -252,9 +268,9 @@ static void load_next(int sign)
 	const player_info_t* info = player_get_info();
 	player_sta_t prev_status = info->status;
 
-	load_file(files + p_file*MAX_LEN);
+	load_file(files + p_file * MAX_LEN);
 
-	if (prev_status == PLAYER_STA_PLAY && sign != 0) {
+	if(prev_status == PLAYER_STA_PLAY && sign != 0) {
 		play_pause(info);
 	}
 }
@@ -311,11 +327,11 @@ int main(void)
 
 	LOG_DEBUG("Ls: %d", n_files);
 
-	for (int i = 0; i < n_files; i++) {
-		LOG_DEBUG("File %d: %s", i, files + i*MAX_LEN);
+	for(int i = 0; i < n_files; i++) {
+		LOG_DEBUG("File %d: %s", i, files + i * MAX_LEN);
 	}
 
-	if (n_files == 0) {
+	if(n_files == 0) {
 		ERROR_CHECK(ERR_INVALD_DATA);
 	}
 

@@ -1,9 +1,26 @@
+/*
+@file: ui.c
+Copyright (C) 2020 by Alejandro Vicario, Xiaoyu Wang and chipPLAY contributors.
+This file is part of the chipPLAY project.
+ChipPLAY is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+ChipPLAY is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+You should have received a copy of the GNU General Public License
+along with ChipPlay.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include "ui.h"
 #include "display.h"
 #include "display_data.h"
 #include "timeout.h"
 #include <string.h>
 #include <stdio.h>
+#include "version.h"
 
 /** Global variables **********************************************************/
 
@@ -19,7 +36,7 @@ static void set_time(ui_t* self, uint16_t time)
 {
 	char buffer[6];
 
-	uint8_t min = time/60;
+	uint8_t min = time / 60;
 	uint8_t seg = time % 60;
 
 	min = min % 100;
@@ -57,7 +74,7 @@ static void text_center(ui_t* self, const char* text, uint8_t line)
 {
 	uint8_t len = strlen(text);
 
-	if (len > DISPLAY_COLUMNS) {
+	if(len > DISPLAY_COLUMNS) {
 		len = DISPLAY_COLUMNS;
 	}
 
@@ -65,7 +82,7 @@ static void text_center(ui_t* self, const char* text, uint8_t line)
 	memcpy(buffer, text, len);
 	buffer[len] = '\0';
 
-	uint8_t offset = DISPLAY_WIDTH - len*8;
+	uint8_t offset = DISPLAY_WIDTH - len * 8;
 	offset /= 2;
 
 	display_clear_line(self->display, line);
@@ -83,7 +100,7 @@ void ui_notify(ui_t* self, const char* text)
 /** Public functions **********************************************************/
 err_t ui_init(ui_t* self, display_t* display)
 {
-	if (self == NULL || display == NULL) {
+	if(self == NULL || display == NULL) {
 		return ERR_NULL;
 	}
 
@@ -105,7 +122,7 @@ err_t ui_loadsong(ui_t* self, const char* name, const player_info_t* info)
 	uint8_t len = strlen(name);
 	len -= 4;
 
-	if (len > UI_NAME_MAX) {
+	if(len > UI_NAME_MAX) {
 		len = UI_NAME_MAX;
 	}
 
@@ -114,7 +131,7 @@ err_t ui_loadsong(ui_t* self, const char* name, const player_info_t* info)
 
 	self->name_len = len;
 
-	if (self->name_len > DISPLAY_COLUMNS) {
+	if(self->name_len > DISPLAY_COLUMNS) {
 		display_clear_line(self->display, 0);
 		self->scroll_pos = 40;
 		self->scroll_enable = true;
@@ -136,15 +153,15 @@ err_t ui_loadsong(ui_t* self, const char* name, const player_info_t* info)
 	display_drawicon(self->display, 7, 80, sym_stop);
 	display_drawicon(self->display, 7, 0, sym_left);
 	display_drawicon(self->display, 7, 8, sym_ltail);
-	display_drawicon(self->display, 7, 15*8, sym_right);
-	display_drawicon(self->display, 7, 14*8, sym_rtail);
+	display_drawicon(self->display, 7, 15 * 8, sym_right);
+	display_drawicon(self->display, 7, 14 * 8, sym_rtail);
 
 	return SUCCESS;
 }
 
 void ui_setprogress(ui_t* self, uint16_t elapsed)
 {
-	uint8_t progress = (elapsed*60)/self->duration;
+	uint8_t progress = (elapsed * 60) / self->duration;
 
 	uint8_t buffer[64];
 	display_rect_t rect;
@@ -170,8 +187,8 @@ void ui_play(ui_t* self)
 	display_clear_line(self->display, 7);
 	display_drawicon(self->display, 7, 40, sym_pause);
 	display_drawicon(self->display, 7, 80, sym_stop);
-	display_drawicon(self->display, 7, 8, sym_get('+'));
-	display_drawicon(self->display, 7, 14*8, sym_get('-'));
+	display_drawicon(self->display, 7, 8, sym_get('-'));
+	display_drawicon(self->display, 7, 14 * 8, sym_get('+'));
 
 	ui_notify(self, "Play!");
 }
@@ -183,8 +200,8 @@ void ui_pause(ui_t* self)
 	display_clear_line(self->display, 7);
 	display_drawicon(self->display, 7, 40, sym_resume);
 	display_drawicon(self->display, 7, 80, sym_stop);
-	display_drawicon(self->display, 7, 8, sym_get('+'));
-	display_drawicon(self->display, 7, 14*8, sym_get('-'));
+	display_drawicon(self->display, 7, 8, sym_get('-'));
+	display_drawicon(self->display, 7, 14 * 8, sym_get('+'));
 
 	ui_notify(self, "Pause");
 }
@@ -211,7 +228,7 @@ void ui_hello(ui_t* self)
 	display_drawtext(self->display, "Xiaoyu Wang", 4, 0);
 
 	text_center(self, __DATE__, 6);
-	text_center(self, __TIME__, 7);
+	text_center(self, "v" VERSION_STR, 7);
 
 }
 
@@ -222,16 +239,16 @@ void ui_fire(ui_t* self)
 
 		uint8_t off = 0;
 		int8_t pos_x = self->scroll_pos;
-		if (self->scroll_pos < 0) {
-			off = -self->scroll_pos/8;
-			pos_x = self->scroll_pos%8;
+		if(self->scroll_pos < 0) {
+			off = -self->scroll_pos / 8;
+			pos_x = self->scroll_pos % 8;
 		}
 
 		display_drawtext_x(self->display, self->name + off, 0, pos_x);
 
 		self->scroll_pos--;
 
-		if (self->scroll_pos < -self->name_len*8) {
+		if(self->scroll_pos < -self->name_len * 8) {
 			self->scroll_pos = 127;
 		}
 	}

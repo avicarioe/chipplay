@@ -1,3 +1,19 @@
+/*
+@file: display.h
+Copyright (C) 2020 by Alejandro Vicario, Xiaoyu Wang and chipPLAY contributors.
+This file is part of the chipPLAY project.
+ChipPLAY is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+ChipPLAY is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+You should have received a copy of the GNU General Public License
+along with ChipPlay.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #ifndef DISPLAY_H__
 #define DISPLAY_H__
 
@@ -34,16 +50,16 @@ typedef struct display_rect_t {
 err_t display_init(display_t* self, const display_conf_t* conf);
 
 void display_drawrect(display_t* self, const display_rect_t* rect,
-		const uint8_t* data);
+	const uint8_t* data);
 
 void display_drawtext(display_t* self, const char* text, uint8_t line,
-		uint8_t pos);
+	uint8_t pos);
 
 void display_drawtext_x(display_t* self, const char* text, uint8_t line,
-		int8_t x);
+	int8_t x);
 
 void display_drawicon(display_t* self, uint8_t line, uint8_t x,
-		const uint8_t* data);
+	const uint8_t* data);
 
 void display_clear(display_t* self);
 

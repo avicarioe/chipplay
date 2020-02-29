@@ -1,3 +1,19 @@
+/*
+@file: timeout.c
+Copyright (C) 2020 by Alejandro Vicario, Xiaoyu Wang and chipPLAY contributors.
+This file is part of the chipPLAY project.
+ChipPLAY is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+ChipPLAY is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+You should have received a copy of the GNU General Public License
+along with ChipPlay.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include "timeout.h"
 #include "timer16.h"
 #include "interrupts.h"
@@ -32,13 +48,13 @@ void timeout_init()
 
 void timeout_start(timeout_t* timeout, uint32_t ms)
 {
-	timeout->start = count/10;
+	timeout->start = count / 10;
 	timeout->ms = ms;
 }
 
 bool timeout_check(timeout_t* timeout)
 {
-	uint32_t temp = count/10;
+	uint32_t temp = count / 10;
 	return temp - timeout->start < timeout->ms;
 }
 

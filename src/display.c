@@ -1,3 +1,19 @@
+/*
+@file: display.c
+Copyright (C) 2020 by Alejandro Vicario, Xiaoyu Wang and chipPLAY contributors.
+This file is part of the chipPLAY project.
+ChipPLAY is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+ChipPLAY is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+You should have received a copy of the GNU General Public License
+along with ChipPlay.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #define LOG_MODULE_NAME "disp"
 #include "log.h"
 
@@ -48,7 +64,8 @@ static void set_cursor(display_t* self, uint8_t line, uint8_t x);
 /** Callback definitions ******************************************************/
 
 /** Function definitions ******************************************************/
-static void display_setup(display_t* self) {
+static void display_setup(display_t* self)
+{
 
 	timeout_delay(100);
 
@@ -88,7 +105,7 @@ static void display_setup(display_t* self) {
 static void send_command(display_t* self, uint8_t cmd)
 {
 	err_t rc = i2c_tx(self->i2c, self->addr, START_CMD, &cmd, 1, false);
-	if (rc != SUCCESS) {
+	if(rc != SUCCESS) {
 		LOG_WARN("Send command: %d", rc);
 	}
 }
@@ -96,7 +113,7 @@ static void send_command(display_t* self, uint8_t cmd)
 static void send_data(display_t* self, const uint8_t* data, uint8_t len)
 {
 	err_t rc = i2c_tx(self->i2c, self->addr, START_DATA, data, len, true);
-	if (rc != SUCCESS) {
+	if(rc != SUCCESS) {
 		LOG_WARN("Send data: %d", rc);
 	}
 }
@@ -112,7 +129,7 @@ static void set_cursor(display_t* self, uint8_t line, uint8_t x)
 /** Public functions **********************************************************/
 err_t display_init(display_t* self, const display_conf_t* conf)
 {
-	if (self == NULL || conf == NULL) {
+	if(self == NULL || conf == NULL) {
 		return ERR_NULL;
 	}
 
@@ -125,7 +142,7 @@ err_t display_init(display_t* self, const display_conf_t* conf)
 }
 
 void display_drawrect(display_t* self, const display_rect_t* rect,
-		const uint8_t* data)
+	const uint8_t* data)
 {
 	ASSERT(rect->line < DISPLAY_LINES);
 	ASSERT(rect->width + rect->x <= DISPLAY_WIDTH);
@@ -136,50 +153,50 @@ void display_drawrect(display_t* self, const display_rect_t* rect,
 }
 
 void display_drawtext(display_t* self, const char* text, uint8_t line,
-		uint8_t pos)
+	uint8_t pos)
 {
-	display_drawtext_x(self, text, line, 8*pos);
+	display_drawtext_x(self, text, line, 8 * pos);
 }
 
 void display_drawtext_x(display_t* self, const char* text, uint8_t line,
-		int8_t x)
+	int8_t x)
 {
 	ASSERT(line < DISPLAY_LINES);
 	ASSERT(x >= -8);
 
 	int char_len = strlen(text);
-	int len = 8*char_len;
+	int len = 8 * char_len;
 
-	if (len > DISPLAY_WIDTH - x) {
+	if(len > DISPLAY_WIDTH - x) {
 		len = (DISPLAY_WIDTH - x);
 	}
 
 	uint8_t buffer[len];
 
-	for (int i = 0; i < char_len; i++) {
+	for(int i = 0; i < char_len; i++) {
 		char c = text[i];
 
-		if (i*8 > sizeof(buffer)) {
+		if(i * 8 > sizeof(buffer)) {
 			break;
 		}
 
-		if (c < DISPLAY_FONT_MIN) {
+		if(c < DISPLAY_FONT_MIN) {
 			c = '?';
 		}
 
 		c = c - DISPLAY_FONT_MIN;
 
-		for (int j = 0; j < 8; j++) {
-			if (i*8 + j >= sizeof(buffer)) {
+		for(int j = 0; j < 8; j++) {
+			if(i * 8 + j >= sizeof(buffer)) {
 				break;
 			}
-			buffer[i*8 + j] = display_font[c*8 + j];
+			buffer[i * 8 + j] = display_font[c * 8 + j];
 		}
 	}
 
 	int8_t off = 0;
 
-	if (x < 0) {
+	if(x < 0) {
 		off = -x;
 		x = 0;
 	}
@@ -189,7 +206,7 @@ void display_drawtext_x(display_t* self, const char* text, uint8_t line,
 }
 
 void display_drawicon(display_t* self, uint8_t line, uint8_t x,
-		const uint8_t* data)
+	const uint8_t* data)
 {
 	display_rect_t rect;
 	rect.line = line;
@@ -203,8 +220,8 @@ void display_clear(display_t* self)
 {
 	uint8_t buffer[DISPLAY_WIDTH];
 	memset(buffer, 0, sizeof(buffer));
-	
-	for (int i = 0; i < DISPLAY_LINES; i++) {
+
+	for(int i = 0; i < DISPLAY_LINES; i++) {
 		set_cursor(self, i, 0);
 		send_data(self, buffer, sizeof(buffer));
 	}

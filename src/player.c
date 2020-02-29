@@ -1,3 +1,19 @@
+/*
+@file: player.c
+Copyright (C) 2020 by Alejandro Vicario, Xiaoyu Wang and chipPLAY contributors.
+This file is part of the chipPLAY project.
+ChipPLAY is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+ChipPLAY is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+You should have received a copy of the GNU General Public License
+along with ChipPlay.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #define LOG_MODULE_NAME "player"
 
 #include "main.h"
@@ -32,9 +48,11 @@ static uint8_t pcm_data[8192];
 static volatile uint32_t count;
 
 static const uint8_t volume_lut[PLAYER_MAX_VOLUME + 1] = {
-	0, 4, 6, 9, 13, 18, 25, 35, 50, 71, 100};
+	0, 4, 6, 9, 13, 18, 25, 35, 50, 71, 100
+};
 static const uint8_t volume_offset_lut[PLAYER_MAX_VOLUME + 1] = {
-	128, 123, 120, 116, 111, 105, 96, 83, 64, 37, 0};
+	128, 123, 120, 116, 111, 105, 96, 83, 64, 37, 0
+};
 
 
 /** Function prototypes *******************************************************/
@@ -51,8 +69,8 @@ __ISR(TIMER4)
 
 	uint16_t left = circular_get(&player.pcm);
 	uint16_t right = circular_get(&player.pcm);
-	left = (left*volume)/100 + off;
-	right = (right*volume)/100 + off;
+	left = (left * volume) / 100 + off;
+	right = (right * volume) / 100 + off;
 	pwm_set(player.left_pwm, left);
 	pwm_set(player.right_pwm, right);
 
@@ -90,8 +108,8 @@ static void read_sd()
 
 static void dec_wave()
 {
-	if (circular_used(&player.sd) < player.wave.align &&
-			player.fd != NULL) {
+	if(circular_used(&player.sd) < player.wave.align &&
+		player.fd != NULL) {
 		return;
 	}
 
@@ -198,9 +216,9 @@ void player_stop()
 
 uint8_t player_volume_inc(int sign)
 {
-	if (sign > 0 && player.volume < PLAYER_MAX_VOLUME) {
+	if(sign > 0 && player.volume < PLAYER_MAX_VOLUME) {
 		player.volume++;
-	} else if (sign < 0 && player.volume > 0) {
+	} else if(sign < 0 && player.volume > 0) {
 		player.volume--;
 	}
 
